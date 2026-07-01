@@ -1,0 +1,45 @@
+---
+title: PersonaOS API
+description: Backend API documentation for PersonaOS.
+---
+
+PersonaOS frontend clients communicate with the backend API. The backend owns authentication, content writes, and the provider-specific Supabase integration.
+
+## Local development
+
+Use the local backend while developing:
+
+```bash
+bun run dev:backend
+```
+
+The local OpenAPI document is available from the running backend at:
+
+```text
+http://localhost:4000/api/openapi.json
+```
+
+## Mintlify updates
+
+Regenerate the committed Mintlify OpenAPI file after backend endpoint changes:
+
+```bash
+bun run docs:openapi
+```
+
+For hosted Mintlify playground requests, generate with the deployed API base URL:
+
+```bash
+OPENAPI_SERVER_URL=https://api.example.com/api bun run docs:openapi
+```
+
+Then deploy `documentation/mintlify` as the Mintlify project directory.
+
+## Public docs repository
+
+The private app repository syncs this folder into the public `hamzahasbi/how-to-PersonaOs` repository through GitHub Actions.
+
+Configure the private `PersonaOS` repository with:
+
+- `DOCS_SYNC_TOKEN`: a fine-grained GitHub token with contents read/write access to `hamzahasbi/how-to-PersonaOs`.
+- `OPENAPI_SERVER_URL`: optional repository variable for the deployed API base URL, for example `https://api.example.com/api`.

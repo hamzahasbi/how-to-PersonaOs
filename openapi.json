@@ -1,0 +1,472 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PersonaOS API",
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "bearerFormat": "Supabase access token",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "cookieAuth": {
+        "in": "cookie",
+        "name": "personaos-access-token",
+        "type": "apiKey"
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Backend health check",
+        "responses": {
+          "200": {
+            "description": "Backend is healthy"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Create a backend auth session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "email": "hamza@example.com",
+                "password": "password-123"
+              },
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated user"
+          },
+          "400": {
+            "description": "Invalid payload"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Clear the backend auth session",
+        "responses": {
+          "204": {
+            "description": "Logged out"
+          }
+        }
+      }
+    },
+    "/auth/oauth/{provider}": {
+      "get": {
+        "summary": "Start OAuth through the backend",
+        "parameters": [
+          {
+            "example": "google",
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "/dashboard",
+            "in": "query",
+            "name": "next",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects to provider login"
+          }
+        }
+      }
+    },
+    "/auth/password/reset": {
+      "post": {
+        "summary": "Request a password reset email",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "email": "hamza@example.com",
+                "redirectTo": "http://localhost/password/update"
+              },
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Password reset requested"
+          },
+          "400": {
+            "description": "Invalid payload"
+          }
+        }
+      }
+    },
+    "/auth/password/update": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Update the authenticated user password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "password": "new-password-123"
+              },
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Password updated"
+          },
+          "401": {
+            "description": "Missing session"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Return the current authenticated user",
+        "responses": {
+          "200": {
+            "description": "Authenticated user"
+          },
+          "401": {
+            "description": "Missing or invalid session"
+          }
+        }
+      }
+    },
+    "/account/signup": {
+      "post": {
+        "summary": "Create an auth account and profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "displayName": "Hamza Hasbi",
+                "email": "hamza@example.com",
+                "handle": "hamza",
+                "password": "password-123"
+              },
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created account"
+          },
+          "400": {
+            "description": "Invalid payload"
+          }
+        }
+      }
+    },
+    "/account/profile": {
+      "put": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Update the authenticated user profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "avatarUrl": null,
+                "displayName": "Hamza Hasbi",
+                "handle": "hamza"
+              },
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated profile"
+          },
+          "401": {
+            "description": "Missing session"
+          }
+        }
+      }
+    },
+    "/content/{type}": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "List content documents by type",
+        "parameters": [
+          {
+            "example": "blog",
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Content document list"
+          }
+        }
+      }
+    },
+    "/content/{type}/{slug}": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Read a content document",
+        "parameters": [
+          {
+            "example": "blog",
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "hello-world",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Content document with markdown"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Create or update a content document",
+        "parameters": [
+          {
+            "example": "blog",
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "hello-world",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "markdown": "---\ntitle: Hello World\n---\n# Hello World",
+                "status": "draft",
+                "title": "Hello World"
+              },
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Saved content document"
+          },
+          "400": {
+            "description": "Invalid payload"
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Delete a content document",
+        "parameters": [
+          {
+            "example": "blog",
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "hello-world",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted content document"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/cp/daily": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Get or create today’s challenge",
+        "responses": {
+          "200": {
+            "description": "Existing challenge"
+          },
+          "201": {
+            "description": "Created challenge"
+          }
+        }
+      }
+    },
+    "/cp/attempts": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Record a challenge attempt",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "dailyChallengeId": "<challenge-id>",
+                "notes": "Solved with two pointers.",
+                "status": "solved"
+              },
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created attempt"
+          },
+          "400": {
+            "description": "Invalid payload"
+          }
+        }
+      }
+    }
+  }
+}
