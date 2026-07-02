@@ -27,7 +27,7 @@ Regenerate the committed Mintlify OpenAPI file after backend endpoint changes:
 bun run docs:openapi
 ```
 
-For hosted Mintlify playground requests, generate with the deployed API base URL:
+By default this writes `http://localhost:4000/api` as the request URL so Mintlify can generate examples. For hosted Mintlify playground requests, generate with the deployed API base URL:
 
 ```bash
 OPENAPI_SERVER_URL=https://api.example.com/api bun run docs:openapi
