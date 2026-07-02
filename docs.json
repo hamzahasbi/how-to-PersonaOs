@@ -1,5 +1,10 @@
 {
+  "$schema": "https://mintlify.com/docs.json",
   "name": "PersonaOS",
+  "theme": "mint",
+  "colors": {
+    "primary": "#06b6d4"
+  },
   "navigation": {
     "tabs": [
       {
