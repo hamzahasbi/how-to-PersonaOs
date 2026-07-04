@@ -20,6 +20,16 @@
         "in": "cookie",
         "name": "personaos-access-token",
         "type": "apiKey"
+      },
+      "personaosApiKey": {
+        "in": "header",
+        "name": "x-personaos-api-key",
+        "type": "apiKey"
+      },
+      "personaosApiSecret": {
+        "in": "header",
+        "name": "x-personaos-api-secret",
+        "type": "apiKey"
       }
     }
   },
@@ -351,7 +361,11 @@
           "content": {
             "application/json": {
               "example": {
-                "markdown": "---\ntitle: Hello World\n---\n# Hello World",
+                "data": {
+                  "body": "# Hello World",
+                  "description": "A generated post",
+                  "title": "Hello World"
+                },
                 "status": "draft",
                 "title": "Hello World"
               },
@@ -404,6 +418,96 @@
         "responses": {
           "204": {
             "description": "Deleted content document"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/public/content/{handle}/{type}": {
+      "get": {
+        "security": [
+          {
+            "personaosApiKey": [],
+            "personaosApiSecret": []
+          }
+        ],
+        "summary": "List published content document Markdown URLs for a profile",
+        "parameters": [
+          {
+            "example": "hamza",
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "blog",
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published content document list with Markdown URLs"
+          },
+          "401": {
+            "description": "Invalid API credentials"
+          }
+        }
+      }
+    },
+    "/public/content/{handle}/{type}/{slug}": {
+      "get": {
+        "security": [
+          {
+            "personaosApiKey": [],
+            "personaosApiSecret": []
+          }
+        ],
+        "summary": "Read a published content document Markdown URL",
+        "parameters": [
+          {
+            "example": "hamza",
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "portfolio",
+            "in": "path",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "example": "default",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published content document metadata with a Markdown URL"
+          },
+          "401": {
+            "description": "Invalid API credentials"
           },
           "404": {
             "description": "Not found"
