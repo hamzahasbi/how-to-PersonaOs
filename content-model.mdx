@@ -1,0 +1,45 @@
+---
+title: Content Model
+description: PersonaOS stores Markdown as the durable content artifact while using the backend for validation, ownership, and publishing state.
+---
+
+# Content Model
+
+PersonaOS keeps Markdown as the canonical content format.
+
+## Core idea
+
+- raw `.md` files are the durable content objects
+- the backend validates frontmatter and ownership
+- Postgres stores lookup and publishing metadata
+- frontend renderers keep consuming the same Markdown shape
+
+## Storage split
+
+- Supabase Storage: raw Markdown files
+- Postgres: `content_documents` metadata, ownership, publishing state
+- PersonaOS backend: validation and read/write contracts
+
+## Supported content types
+
+- `portfolio`
+- `blog`
+- `project`
+- `personal`
+- `professional`
+- `competitive`
+
+## Why this model exists
+
+This keeps the product flexible:
+
+- the frontend can render content without inventing a second presentation format
+- the backend can enforce validation and access control
+- the 3D pipeline can derive one frontend-ready world payload from the same
+  source material
+
+## 3D tie-in
+
+The current 3D app does not assemble content itself. The backend derives a
+single world payload from published `professional` and `personal` content, then
+exports that payload to `world.json` for the 3D renderer.

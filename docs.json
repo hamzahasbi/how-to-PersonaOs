@@ -9,7 +9,19 @@
     "tabs": [
       {
         "tab": "Guides",
-        "pages": ["index"]
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "index",
+              "overview",
+              "auth-model",
+              "content-model",
+              "3d-experience",
+              "api-examples"
+            ]
+          }
+        ]
       },
       {
         "tab": "API Reference",

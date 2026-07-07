@@ -1,0 +1,45 @@
+---
+title: Auth Model
+description: PersonaOS keeps auth behind the backend so frontend clients never manage Supabase credentials directly.
+---
+
+# Auth Model
+
+PersonaOS keeps authentication behind the backend boundary.
+
+```text
+Browser -> PersonaOS backend -> Supabase Auth/Postgres
+```
+
+## Why
+
+- frontend clients should not own provider URLs or Supabase auth flows
+- session cookies should be backend-owned and HTTP-only
+- profile bootstrap belongs to the app, not to browser code
+
+## Login flow
+
+1. The frontend posts credentials to `POST /api/auth/login`.
+2. The backend calls Supabase password auth.
+3. The backend sets the PersonaOS session cookie.
+4. The frontend reads the current user via `GET /api/auth/me`.
+
+## OAuth flow
+
+1. The frontend redirects to `GET /api/auth/oauth/google`.
+2. The backend starts the PKCE flow and stores the verifier in a short-lived
+   HTTP-only cookie.
+3. Supabase and Google complete provider auth.
+4. The backend callback exchanges the code, creates a missing profile row, and
+   sets the PersonaOS session cookie.
+
+## Public rule
+
+Frontend clients never set or exchange auth cookies directly. The backend owns:
+
+- provider redirects
+- code exchange
+- session cookies
+- profile bootstrap
+
+See the API Reference tab for the concrete auth endpoints.

@@ -1,0 +1,54 @@
+---
+title: 3D Experience
+description: The current PersonaOS 3D app is a snapshot-driven stadium presentation, not a live gameplay client.
+---
+
+# 3D Experience
+
+PersonaOS includes a standalone 3D portfolio app under `apps/experience-3d`.
+
+## Current direction
+
+The live 3D app is a restrained, cinematic stadium experience:
+
+- the stadium GLB is a fixed WebGL backdrop
+- scroll progress drives camera vantages
+- DOM content panels carry the reading experience
+- compact / no-WebGL paths fall back to content-only cards
+
+This replaced an earlier RPG / free-exploration prototype.
+
+## Data contract
+
+The 3D app is a renderer only.
+
+- it loads `public/data/world.json` once at startup
+- it does not make follow-up runtime API calls
+- `world.json` is exported from `GET /api/public/world/:handle/3d`
+
+## Payload scope
+
+The current payload includes:
+
+- `meta`
+- `player`
+- `intro`
+- `views`
+- `zones`
+- `quests`
+- `stats`
+- `landmarks`
+- `ui`
+
+The content source is limited to published professional/resume and personal
+documents.
+
+## Why snapshot-driven
+
+The snapshot keeps the frontend small and stable:
+
+- one backend assembly path
+- one static export step
+- one startup load in the 3D app
+
+No client-side reassembly, no per-zone reads, no live gameplay state.

@@ -1,0 +1,77 @@
+---
+title: API Examples
+description: Practical examples for auth, public content reads, and the 3D world snapshot flow.
+---
+
+# API Examples
+
+The backend listens on `/api`. The examples below assume:
+
+```bash
+API_URL=http://localhost:4000/api
+TOKEN=<backend-or-supabase-access-token>
+PERSONAOS_API_KEY=dev-frontend-key
+PERSONAOS_API_SECRET=dev-frontend-secret
+```
+
+## Health
+
+```bash
+curl "$API_URL/health"
+```
+
+## Login
+
+```bash
+curl -i -X POST "$API_URL/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "hamza@example.com",
+    "password": "password-123"
+  }'
+```
+
+## Current user
+
+```bash
+curl "$API_URL/auth/me" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## List published content
+
+```bash
+curl "$API_URL/public/content/hamza/blog" \
+  -H "x-personaos-api-key: $PERSONAOS_API_KEY" \
+  -H "x-personaos-api-secret: $PERSONAOS_API_SECRET"
+```
+
+## Read published content URL
+
+```bash
+curl "$API_URL/public/content/hamza/portfolio/default" \
+  -H "x-personaos-api-key: $PERSONAOS_API_KEY" \
+  -H "x-personaos-api-secret: $PERSONAOS_API_SECRET"
+```
+
+The response includes a temporary `markdownUrl`.
+
+## 3D world payload
+
+```bash
+curl "$API_URL/public/world/hamza/3d" \
+  -H "x-personaos-api-key: $PERSONAOS_API_KEY" \
+  -H "x-personaos-api-secret: $PERSONAOS_API_SECRET"
+```
+
+## Export the 3D snapshot used by the frontend
+
+```bash
+set -a; . ./.env.backend; set +a
+curl -s -H "x-personaos-api-key: $PERSONAOS_API_KEY" \
+     -H "x-personaos-api-secret: $PERSONAOS_API_SECRET" \
+     "$API_URL/public/world/<handle>/3d" \
+  | python3 -m json.tool > apps/experience-3d/public/data/world.json
+```
+
+For the full endpoint list and schemas, use the **API Reference** tab.

@@ -515,6 +515,39 @@
         }
       }
     },
+    "/public/world/{handle}/3d": {
+      "get": {
+        "security": [
+          {
+            "personaosApiKey": [],
+            "personaosApiSecret": []
+          }
+        ],
+        "summary": "Read the frontend-ready 3D stadium world payload for a profile",
+        "parameters": [
+          {
+            "example": "hamza",
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "3D world payload with zones, views, and landmarks"
+          },
+          "401": {
+            "description": "Invalid API credentials"
+          },
+          "404": {
+            "description": "Profile not found"
+          }
+        }
+      }
+    },
     "/cp/daily": {
       "get": {
         "security": [

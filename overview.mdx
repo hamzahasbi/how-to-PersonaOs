@@ -1,0 +1,41 @@
+---
+title: Product Overview
+description: What PersonaOS is, how the apps fit together, and what stays behind the backend boundary.
+---
+
+# Product Overview
+
+PersonaOS is a portfolio platform with three active surfaces:
+
+- a public frontend
+- a backend API
+- a standalone 3D experience
+
+The public frontend renders portfolio, resume, personal, and blog content. The
+backend owns authentication, protected content writes, and the contract that
+feeds the 3D experience.
+
+## Active apps
+
+- `apps/frontend`: Next.js frontend for public pages and private dashboard flows
+- `apps/backend`: Express/Bun API for auth, content, and public read contracts
+- `apps/experience-3d`: Vite app for the standalone stadium-based 3D portfolio
+
+## Product boundaries
+
+- Frontend clients talk to the PersonaOS backend, not directly to Supabase
+  Auth.
+- Markdown remains the durable content artifact.
+- The backend shapes public content reads and 3D world payloads.
+- The 3D app is a renderer only: it loads one exported snapshot and does not
+  make follow-up API calls at runtime.
+
+## Public scope
+
+The current public 3D experience only uses:
+
+- professional / resume content
+- personal content
+
+It does not currently pull blog, competitive programming, or project-specific
+data outside what is already expressed through professional content.
