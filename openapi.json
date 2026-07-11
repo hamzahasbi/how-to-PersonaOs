@@ -52,7 +52,8 @@
             "application/json": {
               "example": {
                 "email": "hamza@example.com",
-                "password": "password-123"
+                "password": "password-123",
+                "turnstileToken": "<cloudflare-turnstile-token>"
               },
               "schema": {
                 "type": "object"
@@ -113,13 +114,15 @@
     },
     "/auth/password/reset": {
       "post": {
+        "description": "A Turnstile token is required for anonymous requests and omitted for authenticated requests.",
         "summary": "Request a password reset email",
         "requestBody": {
           "content": {
             "application/json": {
               "example": {
                 "email": "hamza@example.com",
-                "redirectTo": "http://localhost/password/update"
+                "redirectTo": "http://localhost/password/update",
+                "turnstileToken": "<cloudflare-turnstile-token>"
               },
               "schema": {
                 "type": "object"
@@ -203,7 +206,8 @@
                 "displayName": "Hamza Hasbi",
                 "email": "hamza@example.com",
                 "handle": "hamza",
-                "password": "password-123"
+                "password": "password-123",
+                "turnstileToken": "<cloudflare-turnstile-token>"
               },
               "schema": {
                 "type": "object"
@@ -218,6 +222,19 @@
           },
           "400": {
             "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Signups are currently closed"
+          }
+        }
+      }
+    },
+    "/account/status": {
+      "get": {
+        "summary": "Check whether new account signups are currently open",
+        "responses": {
+          "200": {
+            "description": "Signup availability status"
           }
         }
       }
