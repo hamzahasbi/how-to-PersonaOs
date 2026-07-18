@@ -442,6 +442,44 @@
         }
       }
     },
+    "/export/site.zip": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Download a static export of the authenticated owner’s published site",
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Zip archive of the exported site"
+          },
+          "401": {
+            "description": "Missing or invalid session"
+          },
+          "404": {
+            "description": "No profile found for this account"
+          },
+          "429": {
+            "description": "A site export is already running for this account"
+          },
+          "502": {
+            "description": "Site export failed for one or more routes"
+          }
+        }
+      }
+    },
     "/public/content/{handle}/{type}": {
       "get": {
         "security": [
