@@ -1,0 +1,401 @@
+---
+title: Architecture Decision Records
+description: The durable architecture decisions behind PersonaOS and the reasoning that shaped them.
+---
+
+# PersonaOS Architecture Decision Records
+
+This document is the consolidated, public-facing record of the durable architecture decisions behind PersonaOS. Each record follows a lightweight ADR format: context, decision, consequences, and the alternatives that were considered and rejected.
+
+Statuses: **Accepted** (in effect today), **Superseded** (replaced by a later record), **Deferred** (deliberately postponed).
+
+For the chronological project log see [PROGRESS.md](https://github.com/hamzahasbi/PersonaOS/blob/develop/PROGRESS.md). For a tool-by-tool explanation of the stack see [technical-stack.md](https://github.com/hamzahasbi/PersonaOS/blob/develop/documentation/architecture/technical-stack.md).
+
+---
+
+## ADR-001: Bun workspace monorepo orchestrated by Turborepo
+
+- **Status:** Accepted
+- **Date:** 2026-06
+
+### Context
+
+PersonaOS is a portfolio platform made of several deployable surfaces (a public Next.js site, an API, a standalone 3D experience) plus shared UI code. These pieces evolve together: a content-schema change often touches the frontend, the backend, and the 3D payload in one change set. Managing them as separate repositories would multiply versioning, dependency, and CI overhead for a small team.
+
+### Decision
+
+Keep everything in one repository as a **Bun workspace monorepo** (`apps/*`, `packages/*`) with **Turborepo** coordinating tasks:
+
+- Bun (pinned via `packageManager`, currently `bun@1.3.13`) is both the JavaScript runtime and the package manager. One `bun.lock` at the root owns dependency state.
+- Package-level `package.json` scripts remain the source of truth; `turbo.json` only defines task dependencies, caching, persistence, and outputs.
+- Root scripts (`bun run dev`, `bun run build`, `bun run test`, `bun run lint`) fan out through Turborepo filters.
+
+### Consequences
+
+- Cross-cutting changes (schema → API → renderer) land atomically in one PR.
+- Turborepo caching keeps full-repo verification cheap in CI.
+- All apps must track the same Bun version; runtime upgrades are repo-wide events.
+
+### Alternatives considered
+
+- **npm/pnpm + Node:** rejected in favor of Bun's speed and single-tool story (runtime + package manager + test-adjacent tooling).
+- **Polyrepo:** rejected; too much coordination overhead for tightly coupled surfaces.
+
+---
+
+## ADR-002: Markdown-first content model
+
+- **Status:** Accepted
+- **Date:** 2026-06
+
+### Context
+
+The core product is a personal portfolio: resume, projects, blog posts, and personal content. This data is text-heavy, versionable, and owner-edited. A normalized relational model for every content shape would slow iteration while the product model is still settling.
+
+### Decision
+
+**Markdown with YAML frontmatter is the canonical content format.**
+
+- Each content type (portfolio, blog, project, personal, professional, competitive) is a Markdown document with typed frontmatter.
+- `gray-matter` parses frontmatter; **Zod** schemas validate it at load time so invalid content fails early in loaders instead of producing broken pages.
+- `react-markdown` + `remark-gfm` render bodies through shared content components so formatting stays consistent across pages.
+- Structured renderable data (skill sections, socials, tools, languages) lives in frontmatter rather than in database columns.
+
+### Consequences
+
+- Content is portable, diffable, and human-editable; import/export is trivial.
+- Every consumer (public site, dashboard, 3D world assembler) reads the same document shape.
+- Rich relational queries over content are limited; a fully normalized model (drafted in an archived `schema.sql`) stays deferred until the Markdown-first path is outgrown.
+
+---
+
+## ADR-003: Express-on-Bun backend replaces the Symfony/PostgreSQL stack
+
+- **Status:** Accepted
+- **Date:** 2026-06
+
+### Context
+
+An earlier PersonaOS iteration used a Symfony (PHP) backend with its own PostgreSQL setup. Maintaining a second language runtime and framework alongside the TypeScript frontend split the team's attention and blocked type sharing across the API boundary.
+
+### Decision
+
+Remove the Symfony stack entirely and build the backend as a **TypeScript Express app running on Bun** (`apps/backend`), inside the same monorepo:
+
+- Routes are mounted under `/api`; routes stay thin and reusable behavior lives in `apps/backend/src/services`.
+- The backend is the only process holding privileged credentials (Supabase service-role key, provider tokens, API secrets).
+
+### Consequences
+
+- One language (TypeScript) across the whole product; types and validation schemas can be shared.
+- Express is deliberately boring and well-documented; the interesting decisions live in the service layer, not the framework.
+- The old normalized Symfony-era data model was archived, not ported (see ADR-005).
+
+---
+
+## ADR-004: Supabase for Auth, Postgres, and Storage
+
+- **Status:** Accepted
+- **Date:** 2026-06
+
+### Context
+
+PersonaOS needs user identity, a relational database, and object storage for raw Markdown, without operating that infrastructure by hand.
+
+### Decision
+
+Use **Supabase** as the managed platform for all three:
+
+- **Supabase Auth** owns user identity (`auth.users`), including Google OAuth.
+- **Postgres** stores application metadata; `public.profiles.id` references `auth.users(id)`. Row Level Security policies are tracked with the schema.
+- **Supabase Storage** stores raw Markdown objects in a private `content-md` bucket.
+- Only the backend receives server-side Supabase credentials; frontend code never sees the service-role key.
+- Local development runs a full **local Supabase stack** (via the Supabase CLI in Docker, wrapped in Bake targets) so test data never pollutes hosted projects.
+
+### Consequences
+
+- Auth, database, and storage share one platform, one local emulation story, and one production project (Supabase Cloud).
+- The product depends on Supabase's API surface; mitigated by keeping all Supabase calls behind backend services (ADR-006, ADR-007).
+
+---
+
+## ADR-005: Content storage v1 — raw Markdown in Storage, metadata index in Postgres
+
+- **Status:** Accepted
+- **Date:** 2026-06-25
+
+### Context
+
+Content originally lived as files in `apps/frontend/content`, which cannot support multi-user ownership, authenticated editing, or publishing state. The product needed backend-owned content without abandoning the Markdown model (ADR-002).
+
+### Decision
+
+Store content as **raw `.md` objects in Supabase Storage**, indexed by a deliberately small Postgres table:
+
+- `content_documents` holds only what is needed to find, authorize, and publish a document: owner, content type, slug, storage path, status (`draft`/`published`/`archived`), and version.
+- The backend validates Markdown/frontmatter before saving; storage paths are server-generated.
+- Next.js loads Markdown through the backend API and keeps its existing parser/renderer pipeline.
+- `apps/frontend/content` is starter/import data, not the long-term source of truth; an importer flattens it into the API.
+- **No MongoDB.** A document database adds nothing over Storage-plus-index for this shape.
+- **RustFS (S3-compatible self-hosted storage) is deferred** until storage portability or S3 parity becomes a real constraint.
+- A parsed-JSON cache is deferred until repeated parsing is a measured problem.
+
+### Consequences
+
+- The database schema stays tiny and stable while content shapes iterate freely in frontmatter.
+- Content export/import between environments is a file copy plus a manifest.
+- Full-text search and per-field queries over content bodies are not available from Postgres; acceptable at current scale.
+
+---
+
+## ADR-006: Drizzle owns Postgres schema, migrations, and typed queries
+
+- **Status:** Accepted
+- **Date:** 2026-07
+
+### Context
+
+Early schema work mixed hand-written SQL files with dashboard-applied changes, which made environments drift and left no typed query layer for backend code.
+
+### Decision
+
+**Drizzle ORM is the single owner of backend Postgres structure:**
+
+- The Drizzle schema (`apps/backend/src/db/schema.ts`) is the source of truth; migrations are generated into `apps/backend/drizzle/` and tracked in git.
+- RLS policies and storage-bucket setup live in tracked migrations, never as dashboard-only changes.
+- Backend services use Drizzle for typed queries instead of ad hoc SQL strings.
+- The **Supabase JS client is kept only for what Drizzle cannot do**: Auth admin operations and Storage upload/download (see ADR-004).
+- Production initialization (`bun run init:production`) runs Drizzle migrations only and never resets data.
+
+### Consequences
+
+- Every environment (local Supabase, production Supabase Cloud) is reproducible from tracked migrations; migrations are idempotent and safe as a pre-deployment hook.
+- Two clients touch the database platform (Drizzle for SQL, Supabase client for Auth/Storage), with a clear boundary between them.
+
+---
+
+## ADR-007: Backend-owned authentication with HTTP-only cookies
+
+- **Status:** Accepted
+- **Date:** 2026-07-03
+
+### Context
+
+Supabase's default pattern puts auth in the browser via its JS client. That spreads tokens, PKCE state, and provider configuration into frontend code and makes the session model dependent on frontend storage decisions.
+
+### Decision
+
+**All authentication goes through the backend.** The frontend never calls Supabase Auth directly for login, OAuth, logout, or session checks:
+
+```text
+Browser -> PersonaOS backend (/api/auth/*) -> Supabase Auth/Postgres
+```
+
+- Password login: the frontend posts credentials to `POST /api/auth/login`; the backend exchanges them with Supabase and sets a `personaos-access-token` **HTTP-only cookie**.
+- OAuth (Google): the backend generates the provider URL, keeps Supabase's **PKCE verifier in a short-lived HTTP-only cookie** scoped to the callback path, and performs the code exchange at the canonical callback `GET /api/auth/callback`. The frontend `/auth/callback` route exists only to forward compatibility callbacks.
+- After OAuth, the backend bootstraps a missing `public.profiles` row (idempotently — existing profiles are never overwritten on login).
+- Protected routes validate the session cookie with Supabase Auth and use the authenticated user id as the owner id; clients cannot assert their own identity.
+
+### Consequences
+
+- No tokens are readable from JavaScript; XSS cannot exfiltrate a session.
+- Provider configuration (redirect URIs, OAuth secrets) lives entirely on the backend.
+- The backend is a mandatory hop for every authenticated interaction — accepted, since it is also the validation and authorization boundary.
+
+---
+
+## ADR-008: REST/OpenAPI for public contracts, tRPC for internal dashboard workflows
+
+- **Status:** Accepted
+- **Date:** 2026-07-15
+
+### Context
+
+The dashboard is a TypeScript client talking to a TypeScript backend, where request/response type drift is the main hazard. Public consumers (the portfolio renderer, external tools, curl examples, the 3D export) need a stable, documented, language-agnostic contract instead.
+
+### Decision
+
+Split the API surface by audience rather than choosing one style:
+
+- **REST + OpenAPI** (generated from `apps/backend/src/openapi.ts`) remains the stable contract for public content reads, auth/OAuth routes, the 3D world snapshot endpoints, and anything callable by external tools.
+- **tRPC**, mounted inside the existing Express app at `/api/trpc`, is the typed internal surface for authenticated dashboard commands and queries (starting with `content.save` and `github.importProject`).
+- Express auth middleware runs before tRPC procedures, so both surfaces share one session model.
+- REST routes and tRPC procedures that do the same thing must share one backend service (e.g. `services/content-save.ts`), so validation and ownership rules cannot diverge.
+- Migration is incremental: a REST route stays in place until all consumers have moved and it is deliberately deprecated.
+
+### Consequences
+
+- Dashboard calls get end-to-end TypeScript types with no codegen step.
+- Public consumers keep a documented, stable REST contract.
+- Two API styles coexist; the shared-service rule is the guardrail that keeps them consistent.
+
+---
+
+## ADR-009: Standalone 3D experience app with a shared 3D package
+
+- **Status:** Accepted
+- **Date:** 2026-07-05
+
+### Context
+
+The 3D portfolio experience is heavy (Three.js, GLB assets, WebGL) and experimental. Embedding it in the main Next.js bundle would tax every visitor's page load and couple its release cadence to the main site.
+
+### Decision
+
+- The 3D experience is a **separate Vite app** (`apps/experience-3d`), built with **React Three Fiber + Drei** over Three.js.
+- Reusable 3D primitives live in a shared package (`packages/3d-system`) with its own tests and Storybook; new primitives are consumed by `experience-3d` first and only integrated into the main frontend once stable.
+- Vite builds run `tsc --noEmit` first, keeping the app type-checked without a compilation step.
+
+### Consequences
+
+- The main portfolio stays lean; 3D iteration cannot regress the primary site.
+- The main frontend can later reuse `@personaos/3d-system` for immersive views without re-plumbing.
+
+---
+
+## ADR-010: One backend-shaped 3D world payload, exported as a static snapshot
+
+- **Status:** Accepted
+- **Date:** 2026-07-05
+
+### Context
+
+The 3D app needs resume and personal content. Letting the 3D frontend call content APIs per zone would mean many round trips, client-side reinterpretation of portfolio records, and a public app hammering authenticated endpoints.
+
+### Decision
+
+- The backend assembles **one deterministic world payload** (`meta`, `player`, `intro`, `views`, `zones`, `stats`, `landmarks`, `ui`) from resume + personal content, exposed at a single API-key-protected endpoint: `GET /api/public/world/:handle/3d`.
+- An export step writes that payload to a **static `apps/experience-3d/public/data/world.json` snapshot**. The 3D app performs one startup load and **no follow-up API calls**.
+- Gamification and world shaping are backend concerns; the 3D frontend renders what it is given rather than reinterpreting plain portfolio records.
+- Scope is deliberately limited to resume + personal content.
+
+### Consequences
+
+- The 3D app is fully static and can be served from any static host or baked into an edge image (see ADR-012).
+- Content updates require regenerating the snapshot — an explicit publish step, accepted for a portfolio.
+
+---
+
+## ADR-011: Cinematic scroll-driven 3D experience (RPG/guided-tour rejected)
+
+- **Status:** Accepted (supersedes the 3D RPG direction of 2026-07-05)
+- **Date:** 2026-07-06
+
+### Context
+
+The first shipped 3D build was a stadium RPG/guided tour: avatar, keyboard steering, collectibles, quests, a trophy landmark. In review it was rejected — the game mechanics distracted from the actual content and inflated complexity.
+
+### Decision
+
+Rebuild `experience-3d` as a **restrained, cinematic scroll-driven experience**:
+
+- The stadium GLB is a night-match WebGL **backdrop**, not a playable space.
+- Scroll progress glides the camera between five fixed vantages, each paired with a content panel.
+- A **content-only fallback** serves mobile and no-WebGL visitors.
+- The entire game layer (tour, collect, flags, trophy, avatar, keyboard steering) was deleted, not disabled.
+- The backend world payload (ADR-010) was kept; only the frontend interpretation changed.
+
+### Consequences
+
+- The experience showcases content instead of mechanics, with far less code to maintain.
+- The RPG design spec and plan are retained as historical context in `docs/superpowers/`.
+- Deleting rather than flagging the game layer means reviving it would be a rebuild — accepted deliberately.
+
+---
+
+## ADR-012: Local dev on Docker Compose + Caddy + Bake; production on Coolify + Supabase Cloud
+
+- **Status:** Accepted
+- **Date:** 2026-07
+
+### Context
+
+Local development needs production-like routing (one origin, `/api` proxied to the backend) without production complexity. Production needs TLS, per-app secrets, health checks, and git-driven deploys on a single VPS, without hand-rolled infrastructure.
+
+### Decision
+
+**Local:** `docker-compose.dev.yml` runs frontend, backend, and **Caddy** as a reverse proxy (`/api/*` → `backend:4000`, everything else → `frontend:3000`), with source mounted for hot reload. A root **Bakefile** wraps stack lifecycle (`bake up`, `bake down`, `bake logs`, Supabase targets) so contributors run one memorable command. All project commands run inside Docker rather than on the host.
+
+**Production:** a single VPS running **Coolify** (self-hosted PaaS) with **Supabase Cloud** as managed data/auth/storage:
+
+- An **nginx edge container** is the only internet-facing service; the Next.js and Express containers are internal with no published ports.
+- The static 3D app is baked into the edge image — no third runtime container.
+- Next.js fetches the backend **server-side** over the internal Docker network, avoiding browser CORS entirely.
+- Coolify owns TLS (Let's Encrypt), env/secrets, health checks, restarts, and deploy-on-push. **GitHub Actions is a quality gate only** (test/lint/build), not a deployer, and publishes only images whose apps actually changed.
+
+### Consequences
+
+- The dev proxy (Caddy) and prod proxy (nginx-under-Coolify) differ; the compose/Caddy stack is explicitly local-only.
+- No hand-rolled TLS, SSH deploy scripts, or compose files in production.
+- Everything rides one VPS — acceptable for a portfolio product; the managed data layer (Supabase Cloud) is independent of the VPS.
+
+---
+
+## ADR-013: Guarded dependency installs
+
+- **Status:** Accepted
+- **Date:** 2026-07
+
+### Context
+
+Supply-chain attacks on npm packages typically exploit the window right after a malicious version is published. A portfolio platform holding OAuth tokens and a service-role key should not install brand-new package releases blindly.
+
+### Decision
+
+- `bun run install:safe` applies Bun's **seven-day minimum package release age** and the **Socket security scanner** on install.
+- Docker image builds use the same guard, so CI and containers cannot bypass it.
+
+### Consequences
+
+- Newly published (potentially compromised) versions are quarantined for a week before they can enter the dependency tree.
+- Urgent upstream fixes are also delayed up to seven days; an accepted trade-off, with plain `bun install` available for deliberate exceptions.
+
+---
+
+## ADR-014: Testing and quality toolchain
+
+- **Status:** Accepted
+- **Date:** 2026-06
+
+### Context
+
+The repo spans four workspaces with different build tools (Next.js, Vite, plain Bun). Quality tooling must work identically across them and run inside the Docker dev stack.
+
+### Decision
+
+- **Vitest** is the single test runner in every app and package; **Testing Library** drives component tests through user-visible behavior.
+- **ESLint** (flat config; `eslint-config-next` on the frontend) and **Prettier** (with husky + lint-staged on commit) enforce consistency.
+- **Storybook** hosts UI components in isolation (frontend on 6006, 3D system on 6007).
+- Tests live next to the feature they cover; verification (`test`, `lint`, `build`) runs through Turborepo and, for contributors, inside the Docker containers.
+
+### Consequences
+
+- One mental model for testing across all workspaces.
+- Coverage is still growing; the convention (tests near features, Dockerized verification before PRs) is the enforced part.
+
+---
+
+## Decision index
+
+| ADR | Decision                                                | Status   |
+| --- | ------------------------------------------------------- | -------- |
+| 001 | Bun workspace monorepo + Turborepo                      | Accepted |
+| 002 | Markdown-first content model                            | Accepted |
+| 003 | Express-on-Bun backend (Symfony removed)                | Accepted |
+| 004 | Supabase for Auth, Postgres, Storage                    | Accepted |
+| 005 | Content storage v1: Storage objects + Postgres index    | Accepted |
+| 006 | Drizzle owns schema, migrations, typed queries          | Accepted |
+| 007 | Backend-owned auth, HTTP-only cookies                   | Accepted |
+| 008 | REST/OpenAPI public, tRPC internal                      | Accepted |
+| 009 | Standalone 3D app + shared 3D package                   | Accepted |
+| 010 | Single world payload + static snapshot                  | Accepted |
+| 011 | Cinematic scroll-driven 3D (RPG rejected)               | Accepted |
+| 012 | Compose/Caddy/Bake local; Coolify + Supabase Cloud prod | Accepted |
+| 013 | Guarded dependency installs                             | Accepted |
+| 014 | Vitest/Testing Library/ESLint/Prettier/Storybook        | Accepted |
+
+## Maintaining this document
+
+- Add a new numbered record when a durable architecture decision lands; also add a dated entry to [PROGRESS.md](../../PROGRESS.md).
+- Never rewrite history: when a decision changes, mark the old record **Superseded** with a pointer to its replacement.
+- Keep records factual and short; deep implementation detail belongs in the topic docs under `documentation/architecture/`.

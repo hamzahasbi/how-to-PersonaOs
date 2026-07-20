@@ -18,8 +18,13 @@
               "auth-model",
               "content-model",
               "3d-experience",
+              "competitive-stats",
               "api-examples"
             ]
+          },
+          {
+            "group": "Architecture",
+            "pages": ["architecture-decisions"]
           }
         ]
       },

@@ -1,0 +1,95 @@
+---
+title: 'Competitive programming stats'
+description: 'Provider-backed competitive programming stats: capability matrix, sync behavior, and data ownership.'
+---
+
+## Provider capability matrix
+
+| Provider   | Support                     | Source                                                                                               | Profile | Rating | Contests | Submissions       | Tags | Languages |
+| ---------- | --------------------------- | ---------------------------------------------------------------------------------------------------- | ------- | ------ | -------- | ----------------- | ---- | --------- |
+| Codeforces | Official API                | [codeforces.com/apiHelp/methods](https://codeforces.com/apiHelp/methods)                             | ✅      | ✅     | ✅       | ✅ (bounded)      | ✅   | ✅        |
+| AtCoder    | Community endpoint (synced) | [atcoder.jp history endpoint](https://atcoder.jp/users/chokudai/history/json) (public, undocumented) | link    | ✅     | ✅       | —                 | —    | —         |
+| CodeChef   | Community (scraped, synced) | Public profile page (official API defunct)                                                           | link    | ✅     | ✅       | solved total only | —    | —         |
+| Kattis     | Community (scraped, synced) | Public profile page (no API)                                                                         | link    | score  | —        | —                 | —    | —         |
+| LeetCode   | Experimental (link only)    | No stable documented public stats API                                                                | link    | —      | —        | —                 | —    | —         |
+
+Codeforces (official API), AtCoder (public but undocumented endpoint), and CodeChef and
+Kattis (scraped from public profile pages) are all synced. LeetCode remains link-only,
+appearing with an honest support label, the handle, and a profile link — never presented
+as API-backed data.
+
+## Sync behavior
+
+- Syncs are **owner-triggered** from the dashboard (no background jobs) and always run
+  through the backend; provider APIs are never called while rendering the public page.
+- Per-provider refreshes are rate limited (`CP_SYNC_MIN_INTERVAL_SECONDS`, default 120s),
+  deduplicated (one concurrent sync per connection), and bounded
+  (`CODEFORCES_MAX_SUBMISSIONS`, default 2000 most recent submissions).
+- Every successful sync stores a normalized snapshot. Identical data refreshes the
+  existing snapshot instead of growing the table; at most `CP_SNAPSHOT_RETENTION`
+  (default 20) snapshots are kept per connection.
+- A failed sync records the error on the connection but **never deletes the last
+  successful snapshot** — the public page keeps serving it, flagged as stale after 24h.
+- If the backend crashes mid-sync, a connection can be left showing a `running` status
+  until its next refresh; this is cosmetic and clears on the next sync attempt.
+
+### Scraping caveats
+
+CodeChef and Kattis have no supported public stats API, so their adapters scrape the
+public profile page HTML. This is inherently more fragile than an API integration:
+
+- Scraped providers depend on page markup that the provider can change without notice.
+- When parsing breaks, the sync **fails loudly** (recorded as an error on the connection)
+  rather than silently producing wrong data.
+- The last successful snapshot keeps serving on the public page (flagged as stale after
+  24h) — a broken scrape never overwrites good data with bad data.
+
+## Deduplication and reconciliation
+
+- Solved counts are deduplicated by problem identity (`contestId+index` on Codeforces),
+  so multiple accepted submissions count once.
+- Providers host disjoint problem sets, so per-provider solved counts are summed for the
+  public total without double-counting.
+- Imported provider activity is marked `source: "provider"` in snapshots; manual daily
+  challenge attempts remain user-sourced and unchanged. Imported submissions do **not**
+  count toward daily-challenge streaks in v1.
+
+## Data ownership and visibility
+
+- Handles are public identifiers, stored backend-side; no provider credentials exist for
+  the supported providers, and raw provider responses never reach the browser — only the
+  normalized snapshot.
+- Each provider connection has a per-provider **public visibility toggle**; unpublished
+  or disabled connections never appear on `/competitive`.
+- The public endpoint returns a whitelisted payload (handle, profile link, capabilities,
+  limitations, last-sync time, stats); internal sync bookkeeping such as error messages
+  and visibility flags is never exposed publicly.
+- Removing a connection deletes its snapshots (cascade) after an explicit confirmation.
+  It does not touch daily challenges, attempts, or any other content.
+
+## Public API
+
+`GET /api/public/cp/{handle}/stats` (API-key headers, like other public endpoints)
+returns the latest successful snapshot per published provider plus totals and staleness
+flags. See the API reference for the schema.
+
+## Environment variables
+
+| Variable                        | Default                      | Purpose                                     |
+| ------------------------------- | ---------------------------- | ------------------------------------------- |
+| `CODEFORCES_API_BASE_URL`       | `https://codeforces.com/api` | Override for tests/proxies                  |
+| `CODEFORCES_MAX_SUBMISSIONS`    | `2000`                       | Bound on fetched submission history         |
+| `CODEFORCES_REQUEST_GAP_MS`     | `1100`                       | Delay between Codeforces calls              |
+| `CODEFORCES_REQUEST_TIMEOUT_MS` | `10000`                      | Per-request timeout                         |
+| `ATCODER_API_BASE_URL`          | `https://atcoder.jp`         | Override for tests/proxies                  |
+| `CODECHEF_BASE_URL`             | `https://www.codechef.com`   | Override for tests/proxies                  |
+| `KATTIS_BASE_URL`               | `https://open.kattis.com`    | Override for tests/proxies                  |
+| `CP_SCRAPER_USER_AGENT`         | Chrome desktop UA string     | User-Agent sent when scraping profile pages |
+| `CP_SYNC_MIN_INTERVAL_SECONDS`  | `120`                        | Minimum gap between refreshes per provider  |
+| `CP_SNAPSHOT_RETENTION`         | `20`                         | Snapshots kept per connection               |
+
+## Observability
+
+Each sync logs a single structured JSON line
+(`{"event":"cp_sync","provider":…,"result":…,"durationMs":…,"solved":…,"error":…}`)
+covering duration, result counts, and provider errors including rate limits.

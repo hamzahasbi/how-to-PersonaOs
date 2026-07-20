@@ -121,7 +121,6 @@
             "application/json": {
               "example": {
                 "email": "hamza@example.com",
-                "redirectTo": "http://localhost/password/update",
                 "turnstileToken": "<cloudflare-turnstile-token>"
               },
               "schema": {
@@ -593,6 +592,39 @@
         "responses": {
           "200": {
             "description": "3D world payload with zones, views, and landmarks"
+          },
+          "401": {
+            "description": "Invalid API credentials"
+          },
+          "404": {
+            "description": "Profile not found"
+          }
+        }
+      }
+    },
+    "/public/cp/{handle}/stats": {
+      "get": {
+        "security": [
+          {
+            "personaosApiKey": [],
+            "personaosApiSecret": []
+          }
+        ],
+        "summary": "Read published competitive-programming stats snapshots for a profile",
+        "parameters": [
+          {
+            "example": "hamza",
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published competitive-programming stats snapshots for the profile"
           },
           "401": {
             "description": "Invalid API credentials"
