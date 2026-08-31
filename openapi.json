@@ -634,63 +634,6 @@
           }
         }
       }
-    },
-    "/cp/daily": {
-      "get": {
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "summary": "Get or create today’s challenge",
-        "responses": {
-          "200": {
-            "description": "Existing challenge"
-          },
-          "201": {
-            "description": "Created challenge"
-          }
-        }
-      }
-    },
-    "/cp/attempts": {
-      "post": {
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "cookieAuth": []
-          }
-        ],
-        "summary": "Record a challenge attempt",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "example": {
-                "dailyChallengeId": "<challenge-id>",
-                "notes": "Solved with two pointers.",
-                "status": "solved"
-              },
-              "schema": {
-                "type": "object"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Created attempt"
-          },
-          "400": {
-            "description": "Invalid payload"
-          }
-        }
-      }
     }
   }
 }

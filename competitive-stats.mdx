@@ -18,6 +18,15 @@ Kattis (scraped from public profile pages) are all synced. LeetCode remains link
 appearing with an honest support label, the handle, and a profile link — never presented
 as API-backed data.
 
+## Daily CP dashboard
+
+- The provider selector stays available while a challenge is active; Regenerate may switch providers.
+- A failed replacement fetch leaves the current challenge unchanged.
+
+Daily CP challenge snapshots and the public competitive-programming profile stats above
+are separate data sets. Daily CP reports today, all-time, and per-provider challenge
+outcomes from its authenticated dashboard state.
+
 ## Sync behavior
 
 - Syncs are **owner-triggered** from the dashboard (no background jobs) and always run
@@ -50,9 +59,8 @@ public profile page HTML. This is inherently more fragile than an API integratio
   so multiple accepted submissions count once.
 - Providers host disjoint problem sets, so per-provider solved counts are summed for the
   public total without double-counting.
-- Imported provider activity is marked `source: "provider"` in snapshots; manual daily
-  challenge attempts remain user-sourced and unchanged. Imported submissions do **not**
-  count toward daily-challenge streaks in v1.
+- Imported provider activity is marked `source: "provider"` in snapshots. These remote
+  profile snapshots are independent from the authenticated Daily CP challenge history.
 
 ## Data ownership and visibility
 
@@ -65,7 +73,7 @@ public profile page HTML. This is inherently more fragile than an API integratio
   limitations, last-sync time, stats); internal sync bookkeeping such as error messages
   and visibility flags is never exposed publicly.
 - Removing a connection deletes its snapshots (cascade) after an explicit confirmation.
-  It does not touch daily challenges, attempts, or any other content.
+  It does not touch Daily CP challenge history or any other content.
 
 ## Public API
 
@@ -93,3 +101,47 @@ flags. See the API reference for the schema.
 Each sync logs a single structured JSON line
 (`{"event":"cp_sync","provider":…,"result":…,"durationMs":…,"solved":…,"error":…}`)
 covering duration, result counts, and provider errors including rate limits.
+
+## Contests calendar
+
+The dashboard Contests section at `/dashboard?section=contests` shows a calendar month grid
+plus upcoming competitive-programming contests. It displays contests running right now in a
+strip at the top, followed by a calendar view and a list of upcoming events.
+
+Contest data comes from [clist.by](https://clist.by), an aggregator that publishes contest
+schedules across competitive-programming judges. The judges tracked are determined automatically
+from the provider connections already set up in the Competitive section — there is no separate
+judge picker. A connected judge that clist cannot cover is listed as "not covered" rather
+than silently dropped.
+
+Credentials are configured via two environment variables:
+
+- `CLIST_USER_NAME`: Username for clist.by API authentication
+- `CLIST_API_KEY`: API key for clist.by API authentication
+
+Both are optional. If either is unset, the Contests section displays an explanation of the
+missing credentials rather than erroring.
+
+clist throttles API access to 10 requests per minute. Contest data is cached in memory for
+15 minutes to respect this throttle. Contest data is never persisted to the database, so there
+is no migration.
+
+The calendar is built with FullCalendar v6 (
+`@fullcalendar/react`, `@fullcalendar/core`, `@fullcalendar/daygrid`, `@fullcalendar/interaction`,
+all pinned to 6.1.21) and loaded via `next/dynamic` with `ssr: false` to keep it out of the
+initial bundle.
+
+## Clist aggregated profile
+
+Set your clist.by username under **Dashboard → Profile → Clist profile**. It is stored on
+your profile record (the `profiles.clist_username` column), not in markdown frontmatter.
+
+Once set, a link to [clist.by](https://clist.by)'s aggregated view of your ratings appears
+on the public Competitive page and in the dashboard's Competitive section. Leave it blank
+and neither surface renders a link.
+
+The value is your clist.by account name, not a per-judge handle. clist returns a 404 for
+unknown coders, so check the link works after saving.
+
+The public Competitive page reads this from the `GET /api/public/cp/:handle/stats` payload
+rather than fetching the profile separately, so the link cannot take that page down.

@@ -21,6 +21,30 @@ feeds the 3D experience.
 - `apps/backend`: Express/Bun API for auth, content, and public read contracts
 - `apps/experience-3d`: Vite app for the standalone stadium-based 3D portfolio
 
+## Dashboard workspace
+
+The private `/dashboard` workspace opens on **Overview** by default. It brings
+publishing readiness, quick actions, Daily CP, and integration snapshots into
+one calm command surface while keeping each snapshot failure local to its card.
+
+Dashboard navigation groups existing workflows into **Content**,
+**Performance**, and **System**. Section URLs remain stable (for example,
+`/dashboard?section=projects`) and collection actions use the supported action
+URLs such as `/dashboard?section=projects&action=new`, so direct links and
+browser history continue to restore the intended workspace state.
+
+On desktop, navigation stays in a grouped sidebar. Below the desktop breakpoint,
+the active section moves to a compact bar with an accessible drawer that manages
+keyboard focus and restores it on dismissal. Dense provider and statistics data
+switches to equivalent responsive cards on small screens instead of relying on
+horizontal tables.
+
+The dashboard uses the token-backed calm command design system in both light and
+dark modes, including consistent panels, controls, focus treatment, and semantic
+status colors. This is a frontend presentation and navigation improvement only:
+it does not change backend APIs, authentication behavior, database schema, or
+migrations.
+
 ## Product boundaries
 
 - Frontend clients talk to the PersonaOS backend, not directly to Supabase
