@@ -594,7 +594,7 @@
             "personaosApiSecret": []
           }
         ],
-        "summary": "List published content document Markdown URLs for a profile",
+        "summary": "List published content documents for a profile, markdown inline",
         "parameters": [
           {
             "example": "hamza",
@@ -617,7 +617,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Published content document list with Markdown URLs"
+            "description": "Published content documents with inline markdown and a signed Markdown URL"
           },
           "401": {
             "description": "Invalid API credentials"
@@ -633,7 +633,7 @@
             "personaosApiSecret": []
           }
         ],
-        "summary": "Read a published content document Markdown URL",
+        "summary": "Read a published content document, markdown inline",
         "parameters": [
           {
             "example": "hamza",
@@ -665,7 +665,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Published content document metadata with a Markdown URL"
+            "description": "Published content document with inline markdown and a signed Markdown URL"
           },
           "401": {
             "description": "Invalid API credentials"
