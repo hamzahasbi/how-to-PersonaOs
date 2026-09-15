@@ -195,6 +195,113 @@
         }
       }
     },
+    "/football/settings": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Read private football settings",
+        "responses": {
+          "200": {
+            "description": "Football visibility and preferred team"
+          },
+          "401": {
+            "description": "Missing session"
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Publish or unpublish the football page",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "published": true
+              },
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated football settings"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "401": {
+            "description": "Missing session"
+          }
+        }
+      }
+    },
+    "/football/matches": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Read cached fixtures and live scores for the preferred team",
+        "responses": {
+          "200": {
+            "description": "Football match payload"
+          },
+          "401": {
+            "description": "Missing session"
+          }
+        }
+      }
+    },
+    "/public/football/{handle}/matches": {
+      "get": {
+        "security": [
+          {
+            "personaosApiKey": [],
+            "personaosApiSecret": []
+          }
+        ],
+        "summary": "Read a published football match centre",
+        "parameters": [
+          {
+            "example": "hamza",
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public football match payload"
+          },
+          "404": {
+            "description": "Football page is not published"
+          }
+        }
+      }
+    },
     "/account/signup": {
       "post": {
         "summary": "Create an auth account and profile",
