@@ -98,9 +98,9 @@ flags. See the API reference for the schema.
 
 ## Observability
 
-Each sync logs a single structured JSON line
-(`{"event":"cp_sync","provider":…,"result":…,"durationMs":…,"solved":…,"error":…}`)
-covering duration, result counts, and provider errors including rate limits.
+Each sync emits a structured `cp_sync` log event through the backend logger (`info` on
+success, `warn` on failure) with fields `durationMs`, `error`, `ownerId`, `provider`, `result`,
+and `solved`; it is shipped to BetterStack when enabled, or printed to the console otherwise.
 
 ## Contests calendar
 
