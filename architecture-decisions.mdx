@@ -26,7 +26,7 @@ PersonaOS is a portfolio platform made of several deployable surfaces (a public 
 
 Keep everything in one repository as a **Bun workspace monorepo** (`apps/*`, `packages/*`) with **Turborepo** coordinating tasks:
 
-- Bun (pinned via `packageManager`, currently `bun@1.3.13`) is both the JavaScript runtime and the package manager. One `bun.lock` at the root owns dependency state.
+- Bun (pinned via `packageManager`, currently `bun@1.4.4`) is both the JavaScript runtime and the package manager. One `bun.lock` at the root owns dependency state.
 - Package-level `package.json` scripts remain the source of truth; `turbo.json` only defines task dependencies, caching, persistence, and outputs.
 - Root scripts (`bun run dev`, `bun run build`, `bun run test`, `bun run lint`) fan out through Turborepo filters.
 
@@ -110,7 +110,7 @@ Use **Supabase** as the managed platform for all three:
 - **Postgres** stores application metadata; `public.profiles.id` references `auth.users(id)`. Row Level Security policies are tracked with the schema.
 - **Supabase Storage** stores raw Markdown objects in a private `content-md` bucket.
 - Only the backend receives server-side Supabase credentials; frontend code never sees the service-role key.
-- Local development runs a full **local Supabase stack** (via the Supabase CLI in Docker, wrapped in Bake targets) so test data never pollutes hosted projects.
+- Local development runs a full **local Supabase stack** (via the Supabase CLI in Docker, wrapped in Make targets) so test data never pollutes hosted projects.
 
 ### Consequences
 
@@ -303,7 +303,7 @@ Rebuild `experience-3d` as a **restrained, cinematic scroll-driven experience**:
 
 ---
 
-## ADR-012: Local dev on Docker Compose + Caddy + Bake; production on Coolify + Supabase Cloud
+## ADR-012: Local dev on Docker Compose + Caddy + Make; production on Coolify + Supabase Cloud
 
 - **Status:** Accepted
 - **Date:** 2026-07
@@ -314,7 +314,7 @@ Local development needs production-like routing (one origin, `/api` proxied to t
 
 ### Decision
 
-**Local:** `docker-compose.dev.yml` runs frontend, backend, and **Caddy** as a reverse proxy (`/api/*` → `backend:4000`, everything else → `frontend:3000`), with source mounted for hot reload. A root **Bakefile** wraps stack lifecycle (`bake up`, `bake down`, `bake logs`, Supabase targets) so contributors run one memorable command. All project commands run inside Docker rather than on the host.
+**Local:** `docker-compose.dev.yml` runs frontend, backend, and **Caddy** as a reverse proxy (`/api/*` → `backend:4000`, everything else → `frontend:3000`), with source mounted for hot reload. A root **Makefile** wraps stack lifecycle (`make up`, `make down`, `make logs`, Supabase targets) so contributors run one memorable command. All project commands run inside Docker rather than on the host.
 
 **Production:** a single VPS running **Coolify** (self-hosted PaaS) with **Supabase Cloud** as managed data/auth/storage:
 
@@ -390,7 +390,7 @@ The repo spans four workspaces with different build tools (Next.js, Vite, plain 
 | 009 | Standalone 3D app + shared 3D package                   | Accepted |
 | 010 | Single world payload + static snapshot                  | Accepted |
 | 011 | Cinematic scroll-driven 3D (RPG rejected)               | Accepted |
-| 012 | Compose/Caddy/Bake local; Coolify + Supabase Cloud prod | Accepted |
+| 012 | Compose/Caddy/Make local; Coolify + Supabase Cloud prod | Accepted |
 | 013 | Guarded dependency installs                             | Accepted |
 | 014 | Vitest/Testing Library/ESLint/Prettier/Storybook        | Accepted |
 
