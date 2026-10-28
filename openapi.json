@@ -34,6 +34,283 @@
     }
   },
   "paths": {
+    "/integrations/providers": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "List configured provider fields and culture connection/publication status",
+        "responses": {
+          "200": {
+            "description": "Provider summaries; stored secret values are never returned"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/integrations/providers/{provider}": {
+      "put": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Save owner-scoped provider configuration",
+        "parameters": [
+          {
+            "example": "goodreads",
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "entries": {
+                  "rssUrl": "https://www.goodreads.com/review/list_rss/123?shelf=currently-reading",
+                  "published": "false"
+                }
+              },
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated provider summary, without saved secret values"
+          },
+          "400": {
+            "description": "Invalid provider configuration"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Disconnect Goodreads, Spotify, or Trakt and clear its culture snapshot",
+        "parameters": [
+          {
+            "example": "spotify",
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Disconnected; publication disabled"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Unsupported culture provider"
+          }
+        }
+      }
+    },
+    "/integrations/providers/{provider}/connect": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Start Spotify or Trakt OAuth using backend-stored app configuration",
+        "parameters": [
+          {
+            "example": "trakt",
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to provider authorization"
+          },
+          "400": {
+            "description": "Missing app credentials"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "503": {
+            "description": "HTTPS public application origin not configured"
+          }
+        }
+      }
+    },
+    "/integrations/providers/{provider}/callback": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Complete owner-bound Spotify or Trakt authorization",
+        "parameters": [
+          {
+            "example": "trakt",
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Connected; redirect to dashboard integrations"
+          },
+          "400": {
+            "description": "Invalid, expired, or cancelled authorization"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "502": {
+            "description": "Provider token exchange failed"
+          }
+        }
+      }
+    },
+    "/integrations/providers/trakt/device/start": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Start local Trakt device authorization without a redirect URI",
+        "responses": {
+          "200": {
+            "description": "Trakt user code and verification URL; device code stays on the backend"
+          },
+          "400": {
+            "description": "Trakt Client ID missing"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "502": {
+            "description": "Trakt device authorization unavailable"
+          }
+        }
+      }
+    },
+    "/integrations/providers/trakt/device/poll": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Check Trakt device authorization and save owner-scoped tokens when approved",
+        "responses": {
+          "200": {
+            "description": "Trakt connected"
+          },
+          "202": {
+            "description": "Waiting for approval"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "410": {
+            "description": "Device code expired or was denied"
+          },
+          "429": {
+            "description": "Poll interval has not elapsed"
+          },
+          "502": {
+            "description": "Trakt token exchange failed"
+          }
+        }
+      }
+    },
+    "/public/integrations/{handle}/culture": {
+      "get": {
+        "security": [
+          {
+            "personaosApiKey": [],
+            "personaosApiSecret": []
+          }
+        ],
+        "summary": "Read published Goodreads, Spotify, and Trakt culture sections",
+        "parameters": [
+          {
+            "example": "hamza",
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Books, music, and viewing sections with status, updatedAt, and normalized items; private sections contain no items"
+          },
+          "400": {
+            "description": "Invalid profile handle"
+          },
+          "401": {
+            "description": "Invalid API credentials"
+          },
+          "404": {
+            "description": "Profile not found"
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Backend health check",
