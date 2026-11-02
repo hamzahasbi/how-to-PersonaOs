@@ -31,16 +31,11 @@ outcomes from its authenticated dashboard state.
 
 - Syncs are **owner-triggered** from the dashboard (no background jobs) and always run
   through the backend; provider APIs are never called while rendering the public page.
-- Per-provider refreshes are rate limited (`CP_SYNC_MIN_INTERVAL_SECONDS`, default 120s),
-  deduplicated (one concurrent sync per connection), and bounded
-  (`CODEFORCES_MAX_SUBMISSIONS`, default 2000 most recent submissions).
+- Per-provider refreshes are rate limited and deduplicated, with bounded submission history.
 - Every successful sync stores a normalized snapshot. Identical data refreshes the
-  existing snapshot instead of growing the table; at most `CP_SNAPSHOT_RETENTION`
-  (default 20) snapshots are kept per connection.
+  existing snapshot instead of creating duplicate history.
 - A failed sync records the error on the connection but **never deletes the last
   successful snapshot** — the public page keeps serving it, flagged as stale after 24h.
-- If the backend crashes mid-sync, a connection can be left showing a `running` status
-  until its next refresh; this is cosmetic and clears on the next sync attempt.
 
 ### Scraping caveats
 
@@ -81,27 +76,6 @@ public profile page HTML. This is inherently more fragile than an API integratio
 returns the latest successful snapshot per published provider plus totals and staleness
 flags. See the API reference for the schema.
 
-## Environment variables
-
-| Variable                        | Default                      | Purpose                                     |
-| ------------------------------- | ---------------------------- | ------------------------------------------- |
-| `CODEFORCES_API_BASE_URL`       | `https://codeforces.com/api` | Override for tests/proxies                  |
-| `CODEFORCES_MAX_SUBMISSIONS`    | `2000`                       | Bound on fetched submission history         |
-| `CODEFORCES_REQUEST_GAP_MS`     | `1100`                       | Delay between Codeforces calls              |
-| `CODEFORCES_REQUEST_TIMEOUT_MS` | `10000`                      | Per-request timeout                         |
-| `ATCODER_API_BASE_URL`          | `https://atcoder.jp`         | Override for tests/proxies                  |
-| `CODECHEF_BASE_URL`             | `https://www.codechef.com`   | Override for tests/proxies                  |
-| `KATTIS_BASE_URL`               | `https://open.kattis.com`    | Override for tests/proxies                  |
-| `CP_SCRAPER_USER_AGENT`         | Chrome desktop UA string     | User-Agent sent when scraping profile pages |
-| `CP_SYNC_MIN_INTERVAL_SECONDS`  | `120`                        | Minimum gap between refreshes per provider  |
-| `CP_SNAPSHOT_RETENTION`         | `20`                         | Snapshots kept per connection               |
-
-## Observability
-
-Each sync emits a structured `cp_sync` log event through the backend logger (`info` on
-success, `warn` on failure) with fields `durationMs`, `error`, `ownerId`, `provider`, `result`,
-and `solved`; it is shipped to BetterStack when enabled, or printed to the console otherwise.
-
 ## Contests calendar
 
 The dashboard Contests section at `/dashboard?section=contests` shows a calendar month grid
@@ -114,27 +88,12 @@ from the provider connections already set up in the Competitive section — ther
 judge picker. A connected judge that clist cannot cover is listed as "not covered" rather
 than silently dropped.
 
-Credentials are configured via two environment variables:
-
-- `CLIST_USER_NAME`: Username for clist.by API authentication
-- `CLIST_API_KEY`: API key for clist.by API authentication
-
-Both are optional. If either is unset, the Contests section displays an explanation of the
-missing credentials rather than erroring.
-
-clist throttles API access to 10 requests per minute. Contest data is cached in memory for
-15 minutes to respect this throttle. Contest data is never persisted to the database, so there
-is no migration.
-
-The calendar is built with FullCalendar v6 (
-`@fullcalendar/react`, `@fullcalendar/core`, `@fullcalendar/daygrid`, `@fullcalendar/interaction`,
-all pinned to 6.1.21) and loaded via `next/dynamic` with `ssr: false` to keep it out of the
-initial bundle.
+Contest availability depends on the deployment’s configured provider access. If it is
+not configured, the dashboard explains that contest data is unavailable.
 
 ## Clist aggregated profile
 
-Set your clist.by username under **Dashboard → Profile → Clist profile**. It is stored on
-your profile record (the `profiles.clist_username` column), not in markdown frontmatter.
+Set your clist.by username under **Dashboard → Profile → Clist profile**. This is the public profile identifier used to build your clist.by link.
 
 Once set, a link to [clist.by](https://clist.by)'s aggregated view of your ratings appears
 on the public Competitive page and in the dashboard's Competitive section. Leave it blank

@@ -43,3 +43,14 @@ Frontend clients never set or exchange auth cookies directly. The backend owns:
 - profile bootstrap
 
 See the API Reference tab for the concrete auth endpoints.
+
+## Server-to-server published reads
+
+The `/public/` prefix identifies published content; it does not mean that every
+endpoint is anonymously accessible. Where specified in the API reference, send
+both `x-personaos-api-key` and `x-personaos-api-secret` from a trusted server.
+Never ship these credentials in browser code. User bearer tokens and session
+cookies are separate from these server credentials.
+
+HTTP-only cookies limit direct cookie theft through JavaScript. They do not
+prevent injected scripts from acting through a signed-in session.

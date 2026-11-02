@@ -1,45 +1,31 @@
 ---
 title: PersonaOS API
-description: Backend API documentation for PersonaOS.
+description: Public API contracts and integration guidance for PersonaOS.
 ---
 
-PersonaOS frontend clients communicate with the backend API. The backend owns authentication, content writes, and the provider-specific Supabase integration.
+PersonaOS brings a personal profile, projects, writing, and connected interests
+into one publishing platform. These guides describe its content model,
+authentication, and REST API.
 
-## Local development
+## Start here
 
-Use the local backend while developing:
+- [Product overview](/overview): the website, dashboard, and 3D experience.
+- [Authentication](/auth-model): browser sessions and server-to-server access.
+- [Content model](/content-model): authored content and publication state.
+- [API examples](/api-examples): requests using placeholder values.
+- [Architecture decisions](/architecture-decisions): the design and its trade-offs.
 
-```bash
-bun run dev:backend
-```
+Use the **API Reference** tab for endpoint contracts. The downloadable OpenAPI
+specification uses `https://api.example.com/api` as an illustrative base URL
+unless the operator configures a public API origin. It is not a hosted demo.
 
-The local OpenAPI document is available from the running backend at:
+## Access requirements
 
-```text
-http://localhost:4000/api/openapi.json
-```
+Public documentation does not grant API access. Account operations require an
+authenticated user; published-content endpoints may require operator-issued
+server credentials. The `/public/` prefix describes the content's publication
+status, not anonymous access.
 
-## Mintlify updates
-
-Regenerate the committed Mintlify OpenAPI file after backend endpoint changes:
-
-```bash
-bun run docs:openapi
-```
-
-By default this writes `http://localhost:4000/api` as the request URL so Mintlify can generate examples. For hosted Mintlify playground requests, generate with the deployed API base URL:
-
-```bash
-OPENAPI_SERVER_URL=https://api.example.com/api bun run docs:openapi
-```
-
-Then deploy `documentation/mintlify` as the Mintlify project directory.
-
-## Public docs repository
-
-The private app repository syncs this folder into the public `hamzahasbi/how-to-PersonaOs` repository through GitHub Actions.
-
-Configure the private `PersonaOS` repository with:
-
-- `DOCS_SYNC_TOKEN`: a fine-grained GitHub token with contents read/write access to `hamzahasbi/how-to-PersonaOs`.
-- `OPENAPI_SERVER_URL`: optional repository variable for the deployed API base URL, for example `https://api.example.com/api`.
+Use credentials only with the intended PersonaOS deployment. Never put service
+keys, session tokens, or signed content URLs into documentation, screenshots,
+issue reports, or browser-side bundles.

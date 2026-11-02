@@ -2,11 +2,12 @@
   "openapi": "3.1.0",
   "info": {
     "title": "PersonaOS API",
+    "description": "Examples are synthetic. Published-content API keys and secrets are server-only credentials; never embed them in browser code. The /public/ prefix does not imply anonymous access.",
     "version": "0.1.0"
   },
   "servers": [
     {
-      "url": "http://localhost:4000/api"
+      "url": "https://api.example.com/api"
     }
   ],
   "components": {
@@ -286,7 +287,7 @@
         "summary": "Read published Goodreads, Spotify, and Trakt culture sections",
         "parameters": [
           {
-            "example": "hamza",
+            "example": "example-user",
             "in": "path",
             "name": "handle",
             "required": true,
@@ -328,8 +329,8 @@
           "content": {
             "application/json": {
               "example": {
-                "email": "hamza@example.com",
-                "password": "password-123",
+                "email": "user@example.com",
+                "password": "<user-password>",
                 "turnstileToken": "<cloudflare-turnstile-token>"
               },
               "schema": {
@@ -397,7 +398,7 @@
           "content": {
             "application/json": {
               "example": {
-                "email": "hamza@example.com",
+                "email": "user@example.com",
                 "turnstileToken": "<cloudflare-turnstile-token>"
               },
               "schema": {
@@ -432,7 +433,7 @@
           "content": {
             "application/json": {
               "example": {
-                "password": "new-password-123"
+                "password": "<new-user-password>"
               },
               "schema": {
                 "type": "object"
@@ -560,7 +561,7 @@
         "summary": "Read a published football match centre",
         "parameters": [
           {
-            "example": "hamza",
+            "example": "example-user",
             "in": "path",
             "name": "handle",
             "required": true,
@@ -586,10 +587,10 @@
           "content": {
             "application/json": {
               "example": {
-                "displayName": "Hamza Hasbi",
-                "email": "hamza@example.com",
-                "handle": "hamza",
-                "password": "password-123",
+                "displayName": "Example User",
+                "email": "user@example.com",
+                "handle": "example-user",
+                "password": "<user-password>",
                 "turnstileToken": "<cloudflare-turnstile-token>"
               },
               "schema": {
@@ -638,8 +639,8 @@
             "application/json": {
               "example": {
                 "avatarUrl": null,
-                "displayName": "Hamza Hasbi",
-                "handle": "hamza"
+                "displayName": "Example User",
+                "handle": "example-user"
               },
               "schema": {
                 "type": "object"
@@ -874,7 +875,7 @@
         "summary": "List published content documents for a profile, markdown inline",
         "parameters": [
           {
-            "example": "hamza",
+            "example": "example-user",
             "in": "path",
             "name": "handle",
             "required": true,
@@ -913,7 +914,7 @@
         "summary": "Read a published content document, markdown inline",
         "parameters": [
           {
-            "example": "hamza",
+            "example": "example-user",
             "in": "path",
             "name": "handle",
             "required": true,
@@ -964,7 +965,7 @@
         "summary": "Read the frontend-ready 3D stadium world payload for a profile",
         "parameters": [
           {
-            "example": "hamza",
+            "example": "example-user",
             "in": "path",
             "name": "handle",
             "required": true,
@@ -997,7 +998,7 @@
         "summary": "Read published competitive-programming stats snapshots for a profile",
         "parameters": [
           {
-            "example": "hamza",
+            "example": "example-user",
             "in": "path",
             "name": "handle",
             "required": true,
