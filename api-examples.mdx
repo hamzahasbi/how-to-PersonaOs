@@ -61,9 +61,10 @@ curl --fail-with-body "$API_URL/public/content/$PROFILE_HANDLE/portfolio/default
   -H "x-personaos-api-secret: $PERSONAOS_API_SECRET"
 ```
 
-The response includes a temporary `markdownUrl`. Anyone holding that signed URL
-can fetch the referenced file until it expires. Do not include real signed URLs
-in public logs or documentation.
+The response includes the Markdown text and a temporary `markdownUrl` for clients
+that need to fetch the stored file directly. Anyone holding that signed URL can
+fetch the file until it expires. Do not include real signed URLs in public logs
+or documentation.
 
 ## Read the 3D snapshot payload
 

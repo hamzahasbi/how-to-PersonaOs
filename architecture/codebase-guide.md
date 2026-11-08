@@ -30,7 +30,7 @@ The backend is the trust boundary for credentials, ownership checks, content sta
 | `apps/experience-3d`            | Independent Vite application for the stadium portfolio                         | `src/app.tsx`, `src/stadium-experience.tsx`, `src/world-fixture.ts` |
 | `packages/3d-system`            | Shared Three.js / React Three Fiber components and tokens                      | `src/index.ts`, `src/persona-map.tsx`                               |
 | `docker` and root Compose files | Development containers, ingress and production topology                        | `docker/dev`, `docker/caddy`, `docker/edge`, `docker-compose*.yml`  |
-| `documentation`                 | Architecture, setup, API and deployment references                             | `documentation/README.md`                                           |
+| `documentation`                 | Public product, API and architecture guides                                    | `documentation/index.mdx`                                           |
 
 Root scripts are orchestration shortcuts, not separate app implementations. The root package pins Bun, declares workspaces, and routes common tasks through Turbo. Package-level scripts in each app remain the source of truth.
 
@@ -100,19 +100,19 @@ Schema constraints and Row Level Security policies enforce ownership and write b
 - OAuth/provider secrets are stored and used server-side. Public visibility settings determine which connected data can be returned.
 - The frontend's Next rewrites proxy `/api/*` to the backend for browser calls. App Router API handlers take precedence and are used for app-specific proxy behavior.
 
-See [Authentication flow](auth-flow.md), [API guide](../operations/api.md) and the generated OpenAPI route for exact contracts.
+See [Authentication flow](auth-flow.md) and the API Reference tab for exact public REST contracts.
 
 ## Standalone 3D experience
 
 `apps/experience-3d` is a separate Vite build so Three.js and scene assets stay out of the main Next bundle. It renders the published world snapshot from `public/data/world.json`, with scene components and content-only fallback behavior in its own source tree. `packages/3d-system` holds reusable primitives shared with the standalone experience. The backend export script produces the world snapshot; regenerate it through the documented backend command rather than editing derived JSON by hand.
 
-The production edge image serves the built 3D site alongside frontend/backend routing. Development runs it as its own Compose service. See [3D experience](3d-experience.md) and [Development](../operations/development.md).
+The production edge image serves the built 3D site alongside frontend/backend routing. Development runs it as its own Compose service. See [3D experience](3d-experience.md).
 
 ## Configuration and runtime
 
 Use `.env.frontend.example`, `.env.backend.example` and `.env.compose.example` as templates. The backend validates required credentials at startup in `src/config.ts`; optional integrations can be absent and report an unconfigured state. Environment values differ between local Supabase and production, so follow the relevant operations guide rather than copying values between environments.
 
-Development runs application commands in Docker Compose. Caddy routes local hostnames and TLS; frontend, backend and 3D app are separate services. Production uses prebuilt images and the edge proxy; frontend build-time public values are baked into the image while secrets remain runtime-only. See [Development](../operations/development.md) and [Deployment](../operations/deployment.md).
+Development runs application commands in Docker Compose. Caddy routes local hostnames and TLS; frontend, backend and 3D app are separate services. Production uses prebuilt images and the edge proxy; frontend build-time public values are baked into the image while secrets remain runtime-only.
 
 ## Change workflow
 
@@ -120,8 +120,8 @@ Development runs application commands in Docker Compose. Caddy routes local host
 2. Keep contracts at the boundary: validate REST/tRPC inputs, normalize provider payloads, and scope private data to the authenticated owner.
 3. Add or update a migration for schema changes; update Drizzle schema and persistence stores together.
 4. Add focused tests in the owning app's `src/__tests__` tree or beside the relevant route handler where that app already does so.
-5. Run relevant Dockerized checks from the [development guide](../operations/development.md). Do not run host Bun commands for app tests, lint, builds, migrations or dev servers.
-6. Update this guide or a focused architecture doc when behavior/boundaries changed; add a dated entry to the [progress log](../progress.md) for meaningful architectural or feature changes.
+5. Run app tests, lint, builds, migrations and dev servers in Docker, following the repository's contributor commands.
+6. Update this guide or a focused architecture doc when behavior/boundaries change.
 
 ## Further reading
 
@@ -131,8 +131,3 @@ Development runs application commands in Docker Compose. Caddy routes local host
 - [Content storage](content-storage-v1.md)
 - [Dashboard tRPC migration](dashboard-trpc-migration.md)
 - [3D experience](3d-experience.md)
-- [Development and database setup](../operations/development.md)
-- [API contracts and testing](../operations/api.md)
-- [Deployment](../operations/deployment.md)
-- [Culture integration setup](../operations/culture-integrations-setup.md)
-- [Dependency security](../operations/dependency-security.md)

@@ -1,8 +1,6 @@
 # 3D Experience (experience-3d)
 
-Current-state doc for the standalone 3D app. This replaces the earlier
-"stadium RPG / guided tour" direction, which was built and then rejected. The
-older design specs remain under `docs/superpowers/specs/` as history.
+Current-state doc for the standalone 3D app.
 
 ## Concept
 
@@ -29,9 +27,8 @@ profile details.
 - Renderer only. Content loads once from `public/data/world.json` via
   `loadStadiumWorld()`; on any failure it falls back to a bundled world and
   backfills missing sections.
-- `world.json` is the snapshot of the backend `GET /api/public/world/:handle/3d`
-  payload. Regenerate it with the curl flow in
-  `documentation/operations/api.md`.
+- `world.json` is an exported snapshot of the backend `GET /api/public/world/:handle/3d`
+  payload. The API Reference documents the public endpoint contract.
 - The main-portfolio link (`ui.mainSiteUrl`) is set by the dashboard refresh
   form when regenerating the snapshot, with env/profile website fallbacks for
   scripts and public reads.

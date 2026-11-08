@@ -1,71 +1,34 @@
-# Dashboard tRPC Migration
+# Dashboard tRPC API
 
-PersonaOS now uses tRPC as the typed internal API surface for dashboard-owned
-workflows. The migration starts with content document saves and GitHub README
-project imports while keeping the
-existing REST/OpenAPI routes in place for stable public and operational
-contracts.
+The backend exposes typed, authenticated dashboard workflows at `/api/trpc`. tRPC is an internal TypeScript contract; REST/OpenAPI remains the contract for authentication, public reads, health/docs, OAuth and binary downloads.
 
-## Boundary
+## Runtime boundary
 
-Use tRPC for:
+`apps/backend/src/trpc/middleware.ts` authenticates the request before creating the tRPC context. Each procedure receives the authenticated `userId` and feature services/stores. Procedures must scope private reads and writes to that ID. The router is defined in `apps/backend/src/trpc/router.ts`.
 
-- Authenticated dashboard commands and queries.
-- TypeScript-to-TypeScript frontend/backend calls where drift is likely.
-- Workflows that are not intended as public API contracts.
+## Current procedure groups
 
-Keep REST/OpenAPI for:
+| Group         | Current responsibility                                                 |
+| ------------- | ---------------------------------------------------------------------- |
+| `assets`      | Sign Cloudinary uploads for game assets                                |
+| `contests`    | List upcoming contests for connected judges                            |
+| `competitive` | Manage provider handles/visibility, read stats and trigger sync        |
+| `dailyCp`     | Read daily state, generate challenges, resolve outcomes and regenerate |
+| `content`     | Save validated Markdown documents                                      |
+| `github`      | Check the saved token and import a repository README project           |
+| `personal`    | Manage the clist username, games and favorite team                     |
 
-- Public content reads under `/api/public/content`.
-- Auth and OAuth routes under `/api/auth`.
-- Public 3D world snapshot reads and world export flow.
-- API documentation generated from `apps/backend/src/openapi.ts`.
-- Any route expected to be called by external tools or curl examples.
+The exact input and output schemas in `router.ts` are authoritative. Keep public and operational REST contracts in `apps/backend/src/openapi.ts` rather than adding them to tRPC.
 
-## Current Implementation
+## Shared service behavior
 
-- The backend mounts tRPC at `/api/trpc` from `apps/backend/src/server.ts`.
-- The root tRPC router lives in `apps/backend/src/trpc/router.ts`.
-- Express auth still runs before tRPC procedures through
-  `apps/backend/src/trpc/middleware.ts`.
-- The first procedures are:
-  - `content.save`, used by dashboard Markdown save flows.
-  - `github.importProject`, used by the integrations tab to turn a GitHub
-    repository README into a draft project document.
-- REST `PUT /api/content/:type/:slug` and tRPC `content.save` share
-  `apps/backend/src/services/content-save.ts`.
-- GitHub project import uses `apps/backend/src/services/github-project-import.ts`
-  and reads the stored GitHub token server-side through the provider credential
-  store. The browser sends only the repository URL.
-- GitHub project import uses the README for project metadata only. It saves a
-  lightweight project Markdown stub with the GitHub repository link, and the
-  project page keeps rendering the live README from that link through the shared
-  PersonaOS Markdown renderer.
+REST `PUT /api/content/:type/:slug` and `content.save` both call `saveContentDocument`. GitHub import reads a README and supported repository images on the backend, formats them into a Markdown document, and saves the result as a draft. The public project page renders the saved Markdown; it does not fetch the README on each visit. Re-import to refresh the snapshot.
 
-This keeps authorization and Markdown validation backend-owned while allowing
-the dashboard client to move one workflow at a time.
+## Adding a procedure
 
-## Extension Pattern
+1. Put reusable validation and business rules in the owning backend service.
+2. Add a strict input schema and scope persistence operations to `ctx.userId`.
+3. Reuse the service from REST and tRPC if both adapters expose the same operation.
+4. Add backend procedure tests and frontend tests for the dashboard caller.
 
-When moving another dashboard API call to tRPC:
-
-1. Extract reusable route behavior into a backend service first.
-2. Add a focused backend tRPC test that proves the procedure uses
-   `response.locals.userId` from the authenticated request.
-3. Add or update a frontend test around the dashboard helper/component.
-4. Mount the procedure under the existing root router rather than adding a
-   second tRPC endpoint.
-5. Leave the REST route in place until all consumers are migrated and the route
-   is deliberately deprecated.
-
-## Verification
-
-Use Dockerized commands:
-
-```bash
-docker-compose -f docker-compose.dev.yml run --rm backend bun run test src/trpc/__tests__/router.test.ts
-docker-compose -f docker-compose.dev.yml run --rm frontend bun run test src/content/save-content.test.ts src/components/dashboard/__tests__/profile-dashboard.test.tsx
-```
-
-For broader changes, also run the existing app-level backend/frontend lint,
-test, and build commands from `AGENTS.md`.
+Run affected backend and frontend checks in their Docker containers when changing procedures.

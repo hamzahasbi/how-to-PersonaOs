@@ -1,82 +1,30 @@
-# Content Storage V1
+# Content Storage
 
-V1 keeps Markdown as the canonical content format. The backend stores raw `.md` files in Supabase Storage and keeps only a small Postgres index for ownership, lookup, and publishing state.
+Markdown is the canonical format for authored PersonaOS content. The backend stores document bytes in Supabase Storage and indexes ownership, type, slug and publication state in PostgreSQL.
 
-## Decision
+## Data model
 
-- Use local Supabase for development.
-- Use Supabase Storage for raw Markdown files.
-- Use Postgres for metadata, auth ownership, and RLS.
-- Do not add MongoDB.
-- Do not add RustFS for v1; revisit it only if storage portability or S3 parity becomes a real constraint.
+The `content_documents` table is defined in `apps/backend/src/db/schema.ts`. Its unique owner/type/slug key identifies a document, and its storage bucket/path points to the Markdown object. Status is `draft`, `published`, or `archived`; versions and update timestamps are maintained with the metadata.
 
-## Shape
+Supported types are `portfolio`, `blog`, `project`, `personal`, `professional`, and `competitive`. The current Storage bucket for Markdown is `content-md`. Drizzle migrations in `apps/backend/drizzle` are the database change history; do not use archived schema drafts as deployment instructions.
 
-```text
-Dashboard editor
-  -> Express API validates the user
-  -> API validates Markdown/frontmatter
-  -> API writes raw .md to Supabase Storage
-  -> API upserts metadata in Postgres
-  -> Next.js loads Markdown through the API
-  -> 3D backend assembler derives a gamified world payload from resume + personal content
-  -> 3D export step writes static world.json
-  -> existing parsers/renderers stay in use where applicable
-```
+## Read and write paths
 
-## Minimal Table
+- Dashboard REST reads and writes use `/api/content/:type` and `/api/content/:type/:slug` and are scoped to the authenticated owner.
+- Public reads use `/api/public/content/:handle/:type` and `/api/public/content/:handle/:type/:slug`. Only published documents are returned.
+- Dashboard `content.save` uses tRPC and shares the backend `saveContentDocument` validation and persistence service with the REST save route.
+- Public responses include the Markdown content and a temporary signed URL for clients that need it. The browser-facing site currently consumes the inlined Markdown through its server-side loader.
 
-The v0 bootstrap schema lives in `apps/backend/src/db/schema.v0.sql`. Do not use the broader `apps/backend/src/db/schema.sql` for v0 deployment; it is an archived draft for later normalized data work.
+The backend validates frontmatter before saving and generates storage paths from the owner, type and slug. The browser does not receive the Supabase service-role credential or write directly to the content bucket.
 
-```sql
-create table public.content_documents (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references public.profiles(id) on delete cascade,
-  content_type text not null,
-  slug text not null,
-  storage_bucket text not null default 'content-md',
-  storage_path text not null,
-  status text not null default 'draft' check (status in ('draft', 'published', 'archived')),
-  version int not null default 1,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (owner_id, content_type, slug),
-  unique (storage_bucket, storage_path)
-);
-```
+## Authoring and migration
 
-`content_type` starts with existing content groups: `portfolio`, `blog`, `project`, `personal`, `professional`, `competitive`.
+The dashboard editor saves Markdown documents through the backend. Portfolio block data is serialized to Markdown before it crosses the persistence boundary. Imported starter content and GitHub README projects use the same backend storage and metadata path as normal edits.
 
-## V1 API
+`apps/frontend/content` may be used as local import input where the importer expects it; it is not the runtime source of published pages. Avoid editing or adding starter files as a replacement for a dashboard/API content change.
 
-- `POST /api/account/signup`: creates a Supabase Auth user and initial profile.
-- `PUT /api/account/profile`: creates or updates the authenticated user's profile row.
-- `GET /api/content/:type`: lists the current user's documents for one content type.
-- `GET /api/content/:type/:slug`: returns metadata plus raw Markdown for renderers.
-- `PUT /api/content/:type/:slug`: validates and saves raw Markdown.
-- `DELETE /api/content/:type/:slug`: deletes the raw Markdown object and metadata row.
+## Access and consistency
 
-All content routes and profile updates require a backend session cookie or bearer token. The backend validates the session with Supabase Auth and uses the authenticated user id as the owner id. Account signup is intentionally unauthenticated because it creates the auth user.
+Application authorization scopes every private operation to the authenticated profile. Database ownership and RLS policies protect tables exposed through the Supabase Data API; the backend owns Storage access and publication checks. Keep Markdown and its metadata consistent by using the content store/service rather than writing either side directly.
 
-## Starter Import
-
-The existing frontend Markdown is starter data for the API. Import it after applying `schema.v0.sql` and creating/signing up the local Supabase user:
-
-```bash
-EMAIL=<your-account-email> make init-content
-```
-
-Use `--dry-run` to preview the migration, or `--owner-id=<auth-user-id>` when email lookup is not available. The import reads `apps/frontend/content`, skips `apps/frontend/content/imports`, maps `projects` to the API `project` type, and flattens nested paths into URL-safe slugs such as `professional/experience/void-technical-lead.md` -> `professional/experience-void-technical-lead`.
-
-Each imported file is uploaded to the private `content-md` storage bucket and indexed in `content_documents`. Files with `published: false` stay drafts; all other starter Markdown is published so the API-backed frontend matches the previous file-backed routes.
-
-## Guardrails
-
-- Validate frontmatter before saving.
-- Keep storage paths server-generated.
-- Keep public renderers reading the same Markdown shape they already understand.
-- Let the backend own 3D gamification and world shaping instead of teaching the 3D frontend to reinterpret plain portfolio records.
-- Add parsed JSON cache later only if repeated parsing becomes a measured problem.
-- Treat `apps/frontend/content` as local starter/import data, not the long-term source of truth.
-- New frontend content files are ignored by Git and should be imported into Supabase Storage through the backend.
-- Keep the currently tracked starter content until the frontend and 3D app load Markdown through the API. Remove the tracked files only after those render paths are API-backed.
+For the frontend parsing/rendering path, see the [Codebase Guide](codebase-guide.md). For endpoint schemas, use the API Reference.

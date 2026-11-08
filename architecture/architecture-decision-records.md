@@ -4,7 +4,7 @@ This document is the consolidated, public-facing record of the durable architect
 
 Statuses: **Accepted** (in effect today), **Superseded** (replaced by a later record), **Deferred** (deliberately postponed).
 
-For the chronological project log see the [progress log](../progress.md). For a tool-by-tool explanation of the stack see [technical-stack.md](technical-stack.md).
+For a tool-by-tool explanation of the stack see [technical-stack.md](technical-stack.md).
 
 ---
 
@@ -160,7 +160,7 @@ Early schema work mixed hand-written SQL files with dashboard-applied changes, w
 - RLS policies and storage-bucket setup live in tracked migrations, never as dashboard-only changes.
 - Backend services use Drizzle for typed queries instead of ad hoc SQL strings.
 - The **Supabase JS client is kept only for what Drizzle cannot do**: Auth admin operations and Storage upload/download (see ADR-004).
-- Production initialization (`bun run init:production`) runs Drizzle migrations only and never resets data.
+- Production initialization applies Drizzle migrations. Passing `--email` to the root initializer also imports starter Markdown through the backend content path; it does not reset the database.
 
 ### Consequences
 
@@ -213,7 +213,7 @@ The dashboard is a TypeScript client talking to a TypeScript backend, where requ
 Split the API surface by audience rather than choosing one style:
 
 - **REST + OpenAPI** (generated from `apps/backend/src/openapi.ts`) remains the stable contract for public content reads, auth/OAuth routes, the 3D world snapshot endpoints, and anything callable by external tools.
-- **tRPC**, mounted inside the existing Express app at `/api/trpc`, is the typed internal surface for authenticated dashboard commands and queries (starting with `content.save` and `github.importProject`).
+- **tRPC**, mounted inside the existing Express app at `/api/trpc`, is the typed internal surface for authenticated dashboard commands and queries. Current procedure groups are listed in the [Dashboard tRPC guide](dashboard-trpc-migration.md).
 - Express auth middleware runs before tRPC procedures, so both surfaces share one session model.
 - REST routes and tRPC procedures that do the same thing must share one backend service (e.g. `services/content-save.ts`), so validation and ownership rules cannot diverge.
 - Migration is incremental: a REST route stays in place until all consumers have moved and it is deliberately deprecated.
@@ -293,7 +293,7 @@ Rebuild `experience-3d` as a **restrained, cinematic scroll-driven experience**:
 ### Consequences
 
 - The experience showcases content instead of mechanics, with far less code to maintain.
-- The RPG design spec and plan are retained as historical context in `docs/superpowers/`.
+- The RPG prototype was replaced by the scroll-driven stadium presentation described in ADR-011.
 - Deleting rather than flagging the game layer means reviving it would be a rebuild — accepted deliberately.
 
 ---
@@ -311,17 +311,17 @@ Local development needs production-like routing (one origin, `/api` proxied to t
 
 **Local:** `docker-compose.dev.yml` runs frontend, backend, and **Caddy** as a reverse proxy (`/api/*` → `backend:4000`, everything else → `frontend:3000`), with source mounted for hot reload. A root **Makefile** wraps stack lifecycle (`make up`, `make down`, `make logs`, Supabase targets) so contributors run one memorable command. All project commands run inside Docker rather than on the host.
 
-**Production:** a single VPS running **Coolify** (self-hosted PaaS) with **Supabase Cloud** as managed data/auth/storage:
+**Production:** a single VPS running **Coolify** (self-hosted PaaS) with **Supabase Cloud** as managed data/auth/storage. `docker-compose.prod.yml` defines the backend, frontend, and edge services; Coolify's proxy terminates TLS, and the edge container routes requests:
 
 - An **nginx edge container** is the only internet-facing service; the Next.js and Express containers are internal with no published ports.
 - The static 3D app is baked into the edge image — no third runtime container.
 - Next.js fetches the backend **server-side** over the internal Docker network, avoiding browser CORS entirely.
-- Coolify owns TLS (Let's Encrypt), env/secrets, health checks, restarts, and deploy-on-push. **GitHub Actions is a quality gate only** (test/lint/build), not a deployer, and publishes only images whose apps actually changed.
+- Coolify owns TLS (Let's Encrypt), runtime env/secrets, health checks, restarts, and deployment. GitHub Actions runs quality/security checks and publishes prebuilt images; Coolify pulls and deploys them.
 
 ### Consequences
 
-- The dev proxy (Caddy) and prod proxy (nginx-under-Coolify) differ; the compose/Caddy stack is explicitly local-only.
-- No hand-rolled TLS, SSH deploy scripts, or compose files in production.
+- The dev proxy (Caddy) and prod proxy (nginx behind Coolify) differ; the Caddy stack is local-only.
+- Production routing is versioned in Compose and the edge Nginx config; Coolify owns TLS and deployment orchestration.
 - Everything rides one VPS — acceptable for a portfolio product; the managed data layer (Supabase Cloud) is independent of the VPS.
 
 ---
@@ -391,6 +391,6 @@ The repo spans four workspaces with different build tools (Next.js, Vite, plain 
 
 ## Maintaining this document
 
-- Add a new numbered record when a durable architecture decision lands; also add a dated entry to the [progress log](../progress.md).
+- Add a new numbered record when a durable architecture decision lands.
 - Never rewrite history: when a decision changes, mark the old record **Superseded** with a pointer to its replacement.
 - Keep records factual and short; deep implementation detail belongs in the topic docs under `documentation/architecture/`.

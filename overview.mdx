@@ -1,65 +1,25 @@
 ---
 title: Product Overview
-description: What PersonaOS is, how the apps fit together, and what stays behind the backend boundary.
+description: PersonaOS brings professional work, personal interests, and writing into one profile.
 ---
 
 # Product Overview
 
-PersonaOS is a portfolio platform with three active surfaces:
+PersonaOS is a personal publishing platform with a public portfolio, a private dashboard, connected-interest views, and an optional 3D presentation.
 
-- a public frontend
-- a backend API
-- a standalone 3D experience
+## What it includes
 
-The public frontend renders portfolio, resume, personal, and blog content. The
-backend owns authentication, protected content writes, and the contract that
-feeds the 3D experience.
+- **Public profile:** portfolio, résumé, projects, writing, and personal pages.
+- **Dashboard:** private profile and content editing, publishing controls, and integration settings.
+- **Connected interests:** cached culture, football, and competitive-programming data when providers are configured.
+- **Daily practice:** backend-managed competitive-programming challenges and contest schedules.
+- **3D experience:** a separate stadium-based renderer built from a published profile snapshot.
+- **Static export:** a downloadable archive of published site pages for self-hosting.
 
-## Active apps
+## How the parts fit
 
-- `apps/frontend`: Next.js frontend for public pages and private dashboard flows
-- `apps/backend`: Express/Bun API for auth, content, and public read contracts
-- `apps/experience-3d`: Vite app for the standalone stadium-based 3D portfolio
+The Next.js frontend renders the public site and dashboard. An Express API on Bun owns authentication, content validation and publication, provider access, and storage operations. Supabase provides identity, PostgreSQL, and object storage; Drizzle manages database queries and migrations. The separate Vite 3D app loads a backend-generated snapshot and provides a content-only fallback.
 
-## Dashboard workspace
+Markdown is the authored content format. The backend keeps document files in Supabase Storage and indexes ownership and publication status in PostgreSQL. Only published documents and explicitly enabled integration data are returned for public rendering.
 
-The private `/dashboard` workspace opens on **Overview** by default. It brings
-publishing readiness, quick actions, Daily CP, and integration snapshots into
-one calm command surface while keeping each snapshot failure local to its card.
-
-Dashboard navigation groups existing workflows into **Content**,
-**Performance**, and **System**. Section URLs remain stable (for example,
-`/dashboard?section=projects`) and collection actions use the supported action
-URLs such as `/dashboard?section=projects&action=new`, so direct links and
-browser history continue to restore the intended workspace state.
-
-On desktop, navigation stays in a grouped sidebar. Below the desktop breakpoint,
-the active section moves to a compact bar with an accessible drawer that manages
-keyboard focus and restores it on dismissal. Dense provider and statistics data
-switches to equivalent responsive cards on small screens instead of relying on
-horizontal tables.
-
-The dashboard uses the token-backed calm command design system in both light and
-dark modes, including consistent panels, controls, focus treatment, and semantic
-status colors. This is a frontend presentation and navigation improvement only:
-it does not change backend APIs, authentication behavior, database schema, or
-migrations.
-
-## Product boundaries
-
-- Frontend clients talk to the PersonaOS backend, not directly to Supabase
-  Auth.
-- Markdown remains the durable content artifact.
-- The backend shapes public content reads and 3D world payloads.
-- The 3D app is a renderer only: it loads one exported snapshot and does not
-  make follow-up API calls at runtime.
-
-## Public scope
-
-The current public 3D experience only uses:
-
-- professional / resume content
-- personal content
-
-It does not currently pull blog, competitive programming, or project-specific
-data outside what is already expressed through professional content.
+See [Authentication](/auth-model), [Content Model](/content-model), and [3D Experience](/3d-experience). Use the **API Reference** tab for endpoint contracts.

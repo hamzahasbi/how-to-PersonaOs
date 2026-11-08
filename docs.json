@@ -19,9 +19,7 @@
               "content-model",
               "3d-experience",
               "competitive-stats",
-              "api-examples",
-              "backlog",
-              "progress"
+              "api-examples"
             ]
           },
           {
@@ -35,27 +33,7 @@
               "architecture/dashboard-trpc-migration",
               "architecture/3d-experience",
               "architecture/project-readme-import",
-              "architecture/3d-designer-handoff",
-              "architecture/3d-backend-subagent-spec",
               "architecture-decisions"
-            ]
-          },
-          {
-            "group": "Operations",
-            "pages": [
-              "operations/development",
-              "operations/api",
-              "operations/culture-integrations-setup",
-              "operations/deployment",
-              "operations/dependency-security"
-            ]
-          },
-          {
-            "group": "Plans and history",
-            "pages": [
-              "plans/2026-07-15-project-readme-import",
-              "plans/2026-07-16-fullscreen-home-carousel-design",
-              "plans/2026-07-16-fullscreen-home-carousel-implementation"
             ]
           }
         ]
