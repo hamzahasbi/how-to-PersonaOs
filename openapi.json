@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "PersonaOS API",
-    "description": "Examples are synthetic. Published-content API keys and secrets are server-only credentials; never embed them in browser code. The /public/ prefix does not imply anonymous access.",
+    "description": "Examples are synthetic. Published-content API keys and secrets are server-only credentials; never embed them in browser code. The /public/ prefix does not imply anonymous access. Use me in place of a handle to select the API credential owner.",
     "version": "0.1.0"
   },
   "servers": [
@@ -659,6 +659,58 @@
         }
       }
     },
+    "/account/api-key": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Read API credential status for the signed-in account",
+        "responses": {
+          "200": {
+            "description": "Credential creation timestamp; secret is never returned"
+          }
+        }
+      }
+    },
+    "/account/api-key/rotate": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Rotate account API credentials after confirming the account password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "password": "<user-password>"
+              },
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "New API key and one-time secret"
+          },
+          "401": {
+            "description": "Missing session or incorrect password"
+          }
+        }
+      }
+    },
     "/content/{type}": {
       "get": {
         "security": [
@@ -783,6 +835,9 @@
           },
           "400": {
             "description": "Invalid payload"
+          },
+          "409": {
+            "description": "Portfolio changed during this save"
           }
         }
       },

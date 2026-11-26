@@ -11,6 +11,7 @@ PersonaOS is a personal publishing platform with a public portfolio, a private d
 
 - **Public profile:** portfolio, résumé, projects, writing, and personal pages.
 - **Dashboard:** private profile and content editing, publishing controls, and integration settings.
+- **Portfolio appearance:** owner-configured light and dark palettes, font, and corner radius, edited as JSON and published from the dashboard.
 - **Connected interests:** cached culture, football, and competitive-programming data when providers are configured.
 - **Daily practice:** backend-managed competitive-programming challenges and contest schedules.
 - **3D experience:** a separate stadium-based renderer built from a published profile snapshot.
@@ -21,5 +22,10 @@ PersonaOS is a personal publishing platform with a public portfolio, a private d
 The Next.js frontend renders the public site and dashboard. An Express API on Bun owns authentication, content validation and publication, provider access, and storage operations. Supabase provides identity, PostgreSQL, and object storage; Drizzle manages database queries and migrations. The separate Vite 3D app loads a backend-generated snapshot and provides a content-only fallback.
 
 Markdown is the authored content format. The backend keeps document files in Supabase Storage and indexes ownership and publication status in PostgreSQL. Only published documents and explicitly enabled integration data are returned for public rendering.
+
+The public site is rooted at `/`. Its published portfolio theme is loaded at
+request time and scoped to public pages; it does not change dashboard,
+authentication, editor, or résumé styling. See [Portfolio theming](/portfolio-theming)
+for the supported JSON and publish workflow.
 
 See [Authentication](/auth-model), [Content Model](/content-model), and [3D Experience](/3d-experience). Use the **API Reference** tab for endpoint contracts.

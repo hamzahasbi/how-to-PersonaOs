@@ -1,0 +1,92 @@
+---
+title: Portfolio Theming
+description: Configure and publish the owner-controlled visual theme for the public PersonaOS site.
+---
+
+# Portfolio Theming
+
+The dashboard's **Portfolio Theme** section lets the portfolio owner configure
+the public site's colors, font, and corner radius with validated JSON. Save a
+draft to preserve edits, then publish it to make the theme live. Publishing
+updates the published portfolio document, so no frontend rebuild is required.
+
+## Where the theme applies
+
+The published theme is scoped to these public routes:
+
+- `/` — the canonical portfolio home and public website home
+- `/me`, `/professional`, `/competitive`, `/culture`, and `/football`
+- `/blog` and `/blog/<slug>`
+- `/projects` and `/projects/<slug>`
+
+The dashboard, editor, authentication pages, and `/resume` keep their own
+appearance. The legacy `/portfolio/classic` and `/portfolio/immersive` URLs
+redirect to `/`. Static site exports use `/` as the portfolio route and include
+the published theme.
+
+## JSON format
+
+The current schema is version 1. Every property is optional except `version`;
+omitted values inherit the built-in palette and appearance defaults. Unknown
+properties are rejected. Colors must be six-digit hex values (`#RRGGBB`), and
+the schema checks at least 4.5:1 contrast for text/background, text/surface,
+muted/surface, and accentText/accent in both modes.
+
+```json
+{
+  "version": 1,
+  "font": "system",
+  "radius": "medium",
+  "light": {
+    "background": "#F7F8FC",
+    "surface": "#FFFFFF",
+    "text": "#172033",
+    "muted": "#475569",
+    "border": "#CBD5E1",
+    "accent": "#075A70",
+    "accentText": "#FFFFFF"
+  },
+  "dark": {
+    "background": "#0B1020",
+    "surface": "#141D33",
+    "text": "#F8FAFC",
+    "muted": "#BAC6DA",
+    "border": "#35415D",
+    "accent": "#7DD3FC",
+    "accentText": "#0B1020"
+  }
+}
+```
+
+Supported fonts are `system` and `serif`. Supported radii are `small`,
+`medium`, and `large`. Palette keys are `background`, `surface`, `text`,
+`muted`, `border`, `accent`, and `accentText`. The JSON config selects
+code-owned semantic colors and component styles; it does not accept arbitrary
+CSS, selectors, or component class overrides.
+
+## Draft and publish workflow
+
+1. Open **Dashboard → Content → Portfolio Theme**. A published portfolio must
+   exist before a theme can be edited.
+2. Edit the JSON. The editor validates syntax and the shared schema before it
+   saves.
+3. Save the draft. Draft revisions prevent one editor session from silently
+   overwriting a newer edit.
+4. Review the preview and publish the current revision. Publishing merges the
+   theme into the published portfolio frontmatter while preserving the
+   Markdown body and other frontmatter values.
+
+Public pages and exports read the published theme, never an unpublished draft.
+If the theme cannot be loaded because of an API or validation error, public
+rendering reports an error rather than silently showing an unrelated default
+theme. A missing theme on an older published portfolio continues to use the
+built-in defaults.
+
+## Implementation map
+
+- Shared contract and defaults: `packages/schema/src/portfolio-theme.ts`
+- Owner-scoped draft persistence and publication: `apps/backend/src/db/portfolio-themes.ts`
+- Authenticated dashboard procedures: `apps/backend/src/trpc/router.ts`
+- Theme editor: `apps/frontend/src/components/dashboard/portfolio-theme-editor.tsx`
+- Public route scope and token application: `apps/frontend/src/components/design-system/public-theme-boundary.tsx`
+- Root data loading: `apps/frontend/src/app/layout.tsx`

@@ -20,6 +20,16 @@ PersonaOS keeps Markdown as the canonical content format.
 - Postgres: `content_documents` metadata, ownership, publishing state
 - PersonaOS backend: validation and read/write contracts
 
+## Portfolio presentation and theme
+
+The published `portfolio` document's `presentation` frontmatter contains its
+display mode and optional `theme` object. Existing documents without a theme
+continue to use built-in defaults. The dashboard stores edits as an
+owner-scoped, revision-checked draft; publishing merges the validated theme
+into the published Markdown document. The document remains the source of truth
+for public rendering and static export. See [Portfolio theming](/portfolio-theming)
+for the JSON schema and supported routes.
+
 ## Supported content types
 
 - `portfolio`

@@ -44,13 +44,27 @@ Frontend clients never set or exchange auth cookies directly. The backend owns:
 
 See the API Reference tab for the concrete auth endpoints.
 
-## Server-to-server published reads
+## Account API credentials
 
-The `/public/` prefix identifies published content; it does not mean that every
-endpoint is anonymously accessible. Where specified in the API reference, send
-both `x-personaos-api-key` and `x-personaos-api-secret` from a trusted server.
-Never ship these credentials in browser code. User bearer tokens and session
-cookies are separate from these server credentials.
+Each account has an API key and secret for published read requests. Email/password signup generates a pair and shows it once for 10 seconds. The database stores the key and a SHA-256 hash of the secret; the secret cannot be retrieved later. Signing in does not regenerate credentials.
 
-HTTP-only cookies limit direct cookie theft through JavaScript. They do not
-prevent injected scripts from acting through a signed-in session.
+The dashboard **API keys** section shows credential status and lets a signed-in user rotate the pair after confirming their account password. Copy the new values within 10 seconds. Rotation replaces the database pair immediately, so update any clients, including the frontend environment, or their requests will fail. Responses carrying new credentials should be handled as secrets.
+
+OAuth profile creation also generates a pair, but the current OAuth flow does not display it. Rotation currently requires an account password, so an OAuth-only user must set a password through the supported password reset flow before rotating and obtaining usable credentials.
+
+## Published reads and portfolio deployment
+
+The `/public/` prefix denotes published reads, not anonymous access. Send both `x-personaos-api-key` and `x-personaos-api-secret` from a trusted server. The backend identifies the account from the key, verifies the secret hash and limits profile-specific reads to that owner. Use `me` in place of a handle (for example, `/api/public/content/me/project`). An explicit handle must match the credential owner. Session cookies and bearer tokens are separate and protect dashboard operations.
+
+The frontend server reads `PERSONAOS_API_KEY` and `PERSONAOS_API_SECRET` at runtime and uses that account's credentials to render its portfolio for visitors. Never expose them in browser code. A frontend deployment currently renders one account; account signup does not automatically create a separate deployment or subdomain.
+
+Existing installations can retain their configured environment pair without
+creating a database credential. The backend maps that pair to the profile
+selected by `PERSONAOS_DEFAULT_HANDLE`, or to the sole profile if no handle is
+configured. Missing or ambiguous ownership is rejected; configure the handle
+when multiple profiles exist. Database-backed account credentials continue to
+resolve their own owner independently. Creating or rotating an account pair
+does not disable the environment pair; remove or change it in the deployment
+configuration to revoke that legacy access.
+
+HTTP-only cookies limit direct cookie theft through JavaScript. They do not prevent injected scripts from acting through a signed-in session.

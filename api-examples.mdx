@@ -11,7 +11,6 @@ deployment's supported sign-in or operator provisioning process.
 
 ```bash
 API_URL='https://api.example.com/api'
-PROFILE_HANDLE='example-user'
 ```
 
 ## Health
@@ -42,13 +41,13 @@ real tokens into shared examples or enable shell tracing when using credentials.
 
 ## Read published content from a server
 
-The following calls require **both** operator-issued API headers. Supply
+The following calls require **both** account API headers. Supply
 `PERSONAOS_API_KEY` and `PERSONAOS_API_SECRET` in the trusted server environment.
-They are not browser credentials and must not appear in client-side JavaScript
+Create or rotate the pair in the dashboard, then configure the trusted client. They are not browser credentials and must not appear in client-side JavaScript
 or public environment variables.
 
 ```bash
-curl --fail-with-body "$API_URL/public/content/$PROFILE_HANDLE/blog" \
+curl --fail-with-body "$API_URL/public/content/me/blog" \
   -H "x-personaos-api-key: $PERSONAOS_API_KEY" \
   -H "x-personaos-api-secret: $PERSONAOS_API_SECRET"
 ```
@@ -56,7 +55,7 @@ curl --fail-with-body "$API_URL/public/content/$PROFILE_HANDLE/blog" \
 To request a published document:
 
 ```bash
-curl --fail-with-body "$API_URL/public/content/$PROFILE_HANDLE/portfolio/default" \
+curl --fail-with-body "$API_URL/public/content/me/portfolio/default" \
   -H "x-personaos-api-key: $PERSONAOS_API_KEY" \
   -H "x-personaos-api-secret: $PERSONAOS_API_SECRET"
 ```
@@ -69,7 +68,7 @@ or documentation.
 ## Read the 3D snapshot payload
 
 ```bash
-curl --fail-with-body "$API_URL/public/world/$PROFILE_HANDLE/3d" \
+curl --fail-with-body "$API_URL/public/world/me/3d" \
   -H "x-personaos-api-key: $PERSONAOS_API_KEY" \
   -H "x-personaos-api-secret: $PERSONAOS_API_SECRET"
 ```

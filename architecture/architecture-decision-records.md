@@ -78,7 +78,7 @@ An earlier PersonaOS iteration used a Symfony (PHP) backend with its own Postgre
 Remove the Symfony stack entirely and build the backend as a **TypeScript Express app running on Bun** (`apps/backend`), inside the same monorepo:
 
 - Routes are mounted under `/api`; routes stay thin and reusable behavior lives in `apps/backend/src/services`.
-- The backend is the only process holding privileged credentials (Supabase service-role key, provider tokens, API secrets).
+- The backend holds privileged Supabase and provider credentials. The frontend server also holds its configured account API key and secret for published reads; neither belongs in browser code.
 
 ### Consequences
 

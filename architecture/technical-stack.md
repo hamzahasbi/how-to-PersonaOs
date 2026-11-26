@@ -18,18 +18,26 @@ Backend world export ── static world.json ──> Vite 3D experience
 
 ## Workspace
 
-| Workspace            | Main technologies                                   | Responsibility                                                                        |
-| -------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `apps/frontend`      | Next.js App Router, React, TypeScript, Tailwind CSS | Public pages, dashboard, Markdown editor and server-side data loading                 |
-| `apps/backend`       | Express, Bun, tRPC, Drizzle, Zod                    | Authentication, API contracts, domain services, provider integrations and persistence |
-| `apps/experience-3d` | Vite, React Three Fiber, Three.js                   | Snapshot-driven stadium portfolio and accessible content fallback                     |
-| `packages/3d-system` | React Three Fiber, Three.js                         | Shared 3D components, tokens and fixtures                                             |
+| Workspace            | Main technologies                                            | Responsibility                                                                        |
+| -------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `apps/frontend`      | Next.js App Router, React, TypeScript, Chakra UI v3, Emotion | Public pages, dashboard, Markdown editor and server-side data loading                 |
+| `apps/backend`       | Express, Bun, tRPC, Drizzle, Zod                             | Authentication, API contracts, domain services, provider integrations and persistence |
+| `apps/experience-3d` | Vite, React Three Fiber, Three.js                            | Snapshot-driven stadium portfolio and accessible content fallback                     |
+| `packages/3d-system` | React Three Fiber, Three.js                                  | Shared 3D components, tokens and fixtures                                             |
 
 The root `package.json` declares Bun workspaces and delegates multi-package tasks to Turborepo. Each workspace's package scripts define its actual dev, test, lint and build commands. The repository pins Bun in `package.json` and uses the same version in Docker and CI.
 
 ## Frontend
 
 The frontend uses the App Router under `apps/frontend/src/app`. Route files compose feature components; shared UI is grouped under `src/components`. Content loaders and schemas live in `src/content`, and server/client API helpers live in `src/lib`.
+
+The canonical public portfolio is `/`; `/portfolio/classic` and
+`/portfolio/immersive` redirect there. `PublicThemeBoundary` loads the
+published portfolio theme in the root layout and applies it only to public
+site routes. Dashboard, editor, auth, and résumé routes are excluded. The
+dashboard's `portfolioTheme` tRPC procedures manage revision-checked theme
+drafts and publish the selected revision into the Markdown portfolio. See
+[Portfolio theming](/portfolio-theming).
 
 Auth state, content reads and writes, and provider data flow through the PersonaOS backend. Server-only modules read the internal API URL and secrets; browser code uses same-origin routes and must never receive backend credentials. Markdown is validated and parsed by the shared content pipeline before rendering.
 

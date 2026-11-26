@@ -42,6 +42,13 @@ Root scripts are orchestration shortcuts, not separate app implementations. The 
 
 The root layout (`src/app/layout.tsx`) composes site chrome, theme providers, navigation, portfolio links, auth state and shared error reporting. `src/app/api` contains Next route handlers used for same-origin provider proxies and logs; these complement the backend API and should not duplicate backend business rules.
 
+The canonical portfolio page is `/`; `/portfolio/classic` and
+`/portfolio/immersive` redirect to it. `PublicThemeBoundary` applies the
+published theme only to the public route set. The dashboard editor stores
+revision-checked drafts through the `portfolioTheme` tRPC router and publishes
+the chosen revision into the portfolio Markdown. See [Portfolio theming](/portfolio-theming)
+for route scope, JSON fields, and the draft/publish flow.
+
 ### Content flow
 
 `src/content` is the frontend's domain boundary for data loading, parsing and saving. Public and dashboard Markdown reads are implemented in `api-content.ts`, which calls backend content endpoints. Markdown parsing and frontmatter validation are in `markdown.ts` and `schema.ts`; shared render components are in `components/content/markdown-content.tsx`.
@@ -95,7 +102,7 @@ Schema constraints and Row Level Security policies enforce ownership and write b
 
 - Auth and account routes live in `src/routes/auth.ts` and `account.ts`. Supabase verifies identity; the backend issues/clears the application session cookie and resolves the user for private requests.
 - tRPC middleware authenticates the request before constructing the dashboard context. Procedures receive `userId` and feature services/stores; they should scope every read/write to that ID.
-- Public read routes can require `x-personaos-api-key` and `x-personaos-api-secret`. Never put those values in client bundles.
+- Protected public reads require the account’s `x-personaos-api-key` and `x-personaos-api-secret`; the backend checks the stored hash and scopes profile reads to that account. The `me` handle selects the credential owner. Never put those values in client bundles.
 - CORS is controlled by `ALLOWED_ORIGINS`; production auth callbacks use `PUBLIC_APP_ORIGIN` rather than trusting request Host headers.
 - OAuth/provider secrets are stored and used server-side. Public visibility settings determine which connected data can be returned.
 - The frontend's Next rewrites proxy `/api/*` to the backend for browser calls. App Router API handlers take precedence and are used for app-specific proxy behavior.
